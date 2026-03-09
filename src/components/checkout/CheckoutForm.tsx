@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 
 const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "56912345678";
@@ -43,7 +42,6 @@ function formatShort(d: Date): string {
 }
 
 export default function CheckoutForm() {
-  const router = useRouter();
   const { items, total, clearCart } = useCartStore();
   const totalValue = total();
 
