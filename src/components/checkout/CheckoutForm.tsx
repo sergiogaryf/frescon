@@ -320,7 +320,7 @@ export default function CheckoutForm() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Ej: ALPASO"
+                    placeholder="Ej: DESCUENTO"
                     value={codigo}
                     onChange={(e) => { setCodigo(e.target.value.toUpperCase()); setCodigoError(""); }}
                     onKeyDown={(e) => e.key === "Enter" && aplicarCodigo()}
