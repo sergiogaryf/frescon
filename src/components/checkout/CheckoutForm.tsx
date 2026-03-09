@@ -41,9 +41,14 @@ function formatShort(d: Date): string {
   return d.toLocaleDateString("es-CL", { day: "numeric", month: "short" });
 }
 
+const DELIVERY_MINIMO = 20000;
+const DELIVERY_COSTO  = 3000;
+
 export default function CheckoutForm() {
   const { items, total, clearCart } = useCartStore();
-  const totalValue = total();
+  const totalValue    = total();
+  const costoDelivery = totalValue >= DELIVERY_MINIMO ? 0 : DELIVERY_COSTO;
+  const totalFinal    = totalValue + costoDelivery;
 
   const jueves = useMemo(() => getProximosJueves(4), []);
 
@@ -90,10 +95,15 @@ export default function CheckoutForm() {
 
     const fechaStr = fecha ? formatJueves(fecha) : "";
 
+    const delivery = costoDelivery > 0
+      ? `📦 Envío: $${costoDelivery.toLocaleString("es-CL")}%0A`
+      : `📦 Envío: *Gratis* ✅%0A`;
+
     const msg =
       `Hola Frescon! 🌿%0A%0A` +
       `*Mi pedido:*%0A${lineas}%0A%0A` +
-      `*Total: $${totalValue.toLocaleString("es-CL")}*%0A%0A` +
+      delivery +
+      `*Total: $${totalFinal.toLocaleString("es-CL")}*%0A%0A` +
       `*Datos de entrega:*%0A` +
       `👤 ${nombre}%0A` +
       `📱 ${telefono}%0A` +
@@ -125,7 +135,7 @@ export default function CheckoutForm() {
           direccion,
           fecha_entrega: fecha!.toISOString().split("T")[0],
           notas,
-          total: totalValue,
+          total: totalFinal,
           detalle_pedido: detalle,
         }),
       });
@@ -269,12 +279,30 @@ export default function CheckoutForm() {
               <BankRow label="Email"    value={BANK_EMAIL}   />
             </div>
 
-            {/* Total a pagar */}
-            <div className="flex items-center justify-between bg-[#3AAA35]/8 rounded-2xl px-4 py-3 mb-5">
-              <span className="font-nunito font-black text-[#1A1A1A]">Monto a transferir</span>
-              <span className="font-nunito font-black text-[#3AAA35] text-xl">
-                ${totalValue.toLocaleString("es-CL")}
-              </span>
+            {/* Desglose envío + total */}
+            <div className="bg-[#3AAA35]/8 rounded-2xl px-4 py-3 mb-5 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="font-nunito text-[#666] text-sm">Subtotal productos</span>
+                <span className="font-nunito font-black text-[#1A1A1A] text-sm">${totalValue.toLocaleString("es-CL")}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-nunito text-[#666] text-sm flex items-center gap-1">
+                  📦 Envío
+                  {costoDelivery === 0 && (
+                    <span className="bg-[#3AAA35] text-white text-[10px] font-black px-2 py-0.5 rounded-full">GRATIS</span>
+                  )}
+                </span>
+                <span className={`font-nunito font-black text-sm ${costoDelivery === 0 ? "text-[#3AAA35] line-through" : "text-[#1A1A1A]"}`}>
+                  ${DELIVERY_COSTO.toLocaleString("es-CL")}
+                </span>
+              </div>
+              {costoDelivery > 0 && (
+                <p className="text-[#999] text-xs">Envío gratis en compras sobre ${DELIVERY_MINIMO.toLocaleString("es-CL")}</p>
+              )}
+              <div className="border-t border-[#3AAA35]/20 pt-2 flex items-center justify-between">
+                <span className="font-nunito font-black text-[#1A1A1A]">Total a transferir</span>
+                <span className="font-nunito font-black text-[#3AAA35] text-xl">${totalFinal.toLocaleString("es-CL")}</span>
+              </div>
             </div>
 
             {/* Checkbox confirmación */}
@@ -288,7 +316,7 @@ export default function CheckoutForm() {
                 className="mt-0.5 accent-[#3AAA35] w-4 h-4 flex-shrink-0"
               />
               <span className="font-nunito text-sm text-[#1A1A1A] leading-snug">
-                Ya realicé la transferencia por <strong className="text-[#3AAA35]">${totalValue.toLocaleString("es-CL")}</strong> y tengo el comprobante listo para adjuntar.
+                Ya realicé la transferencia por <strong className="text-[#3AAA35]">${totalFinal.toLocaleString("es-CL")}</strong> y tengo el comprobante listo para adjuntar.
               </span>
             </label>
             {errors.pagado && <p className="text-red-400 text-xs mt-1.5">{errors.pagado}</p>}
@@ -321,9 +349,15 @@ export default function CheckoutForm() {
             </div>
 
             <div className="mt-4 pt-4 border-t border-[#f0f0f0] flex items-center justify-between">
-              <span className="font-nunito font-black text-[#1A1A1A]">Total</span>
+              <div>
+                <span className="font-nunito font-black text-[#1A1A1A]">Total</span>
+                {costoDelivery === 0
+                  ? <span className="ml-2 text-[10px] bg-[#3AAA35] text-white font-black px-2 py-0.5 rounded-full">📦 Envío gratis</span>
+                  : <span className="ml-2 text-[10px] text-[#999] font-nunito">+ $3.000 envío</span>
+                }
+              </div>
               <span className="font-nunito font-black text-[#3AAA35] text-xl">
-                ${totalValue.toLocaleString("es-CL")}
+                ${totalFinal.toLocaleString("es-CL")}
               </span>
             </div>
 
