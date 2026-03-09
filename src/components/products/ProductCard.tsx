@@ -1,0 +1,106 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+import { useCartStore } from "@/store/cartStore";
+import { Product } from "@/types";
+
+interface ProductCardProps {
+  product: Product;
+}
+
+export default function ProductCard({ product }: ProductCardProps) {
+  const [cantidad, setCantidad] = useState(1);
+  const [agregado, setAgregado] = useState(false);
+  const addItem = useCartStore((s) => s.addItem);
+
+  const unidadLabel: Record<string, string> = {
+    kg: "por kilo",
+    unidad: "por unidad",
+    litro: "por litro",
+    atado: "por atado",
+    docena: "por docena",
+  };
+
+  function handleAgregar() {
+    for (let i = 0; i < cantidad; i++) addItem(product);
+    setAgregado(true);
+    setTimeout(() => setAgregado(false), 1500);
+  }
+
+  return (
+    <div className="bg-white rounded-3xl shadow-md hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
+
+      {/* Imagen + badges */}
+      <div className="relative bg-[#f9fafb] pt-6 px-6 pb-2 flex justify-center">
+        {/* Badge temporada */}
+        {product.es_estrella && (
+          <span className="absolute top-3 left-3 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[10px] px-2 py-1 rounded-full flex items-center gap-1">
+            🌿 Temporada
+          </span>
+        )}
+
+        {/* Badge unidad */}
+        <span className="absolute top-3 right-3 bg-white border border-[#e5e5e5] text-[#666] font-nunito text-[10px] px-2 py-1 rounded-full">
+          {unidadLabel[product.unidad] ?? product.unidad}
+        </span>
+
+        <div className="w-28 h-28 relative group-hover:scale-105 transition-transform duration-300">
+          <Image
+            src={product.imagen}
+            alt={product.nombre}
+            fill
+            className="object-contain"
+          />
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="flex flex-col flex-1 px-4 pb-4 pt-3 gap-3">
+        <div>
+          <h3 className="font-nunito font-black text-[#1A1A1A] text-base leading-tight">
+            {product.nombre}
+          </h3>
+          {product.origen && (
+            <p className="text-[#999] text-xs mt-0.5">{product.origen}</p>
+          )}
+        </div>
+
+        <p className="font-nunito font-black text-[#3AAA35] text-xl">
+          ${product.precio.toLocaleString("es-CL")}
+        </p>
+
+        {/* Selector cantidad */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCantidad((c) => Math.max(1, c - 1))}
+            className="w-8 h-8 rounded-full border-2 border-[#e5e5e5] hover:border-[#3AAA35] text-[#1A1A1A] font-nunito font-black flex items-center justify-center transition-colors"
+          >
+            −
+          </button>
+          <span className="font-nunito font-black text-[#1A1A1A] w-6 text-center">
+            {cantidad}
+          </span>
+          <button
+            onClick={() => setCantidad((c) => c + 1)}
+            className="w-8 h-8 rounded-full border-2 border-[#e5e5e5] hover:border-[#3AAA35] text-[#1A1A1A] font-nunito font-black flex items-center justify-center transition-colors"
+          >
+            +
+          </button>
+        </div>
+
+        {/* Botón agregar */}
+        <button
+          onClick={handleAgregar}
+          className={`w-full py-2.5 rounded-full font-nunito font-black text-sm transition-all ${
+            agregado
+              ? "bg-[#3AAA35] text-white"
+              : "bg-[#F9C514] hover:bg-[#E0B010] text-[#1A1A1A]"
+          }`}
+        >
+          {agregado ? "✓ Agregado" : "Agregar al carrito"}
+        </button>
+      </div>
+    </div>
+  );
+}
