@@ -43,12 +43,11 @@ function formatShort(d: Date): string {
 
 const DELIVERY_MINIMO = 20000;
 const DELIVERY_COSTO  = 3000;
+const CODIGOS_DESCUENTO: Record<string, number> = { ALPASO: 5 };
 
 export default function CheckoutForm() {
   const { items, total, clearCart } = useCartStore();
   const totalValue    = total();
-  const costoDelivery = totalValue >= DELIVERY_MINIMO ? 0 : DELIVERY_COSTO;
-  const totalFinal    = totalValue + costoDelivery;
 
   const jueves = useMemo(() => getProximosJueves(4), []);
 
@@ -60,6 +59,32 @@ export default function CheckoutForm() {
   const [pagado,    setPagado]    = useState(false);
   const [errors,    setErrors]    = useState<Record<string, string>>({});
   const [enviando,  setEnviando]  = useState(false);
+  const [codigo,    setCodigo]    = useState("");
+  const [codigoAplicado, setCodigoAplicado] = useState<string | null>(null);
+  const [codigoError,    setCodigoError]    = useState("");
+
+  const pctDescuento  = codigoAplicado ? (CODIGOS_DESCUENTO[codigoAplicado] ?? 0) : 0;
+  const montoDescuento = Math.round(totalValue * pctDescuento / 100);
+  const subtotalConDesc = totalValue - montoDescuento;
+  const costoDelivery  = subtotalConDesc >= DELIVERY_MINIMO ? 0 : DELIVERY_COSTO;
+  const totalFinal     = subtotalConDesc + costoDelivery;
+
+  function aplicarCodigo() {
+    const upper = codigo.trim().toUpperCase();
+    if (CODIGOS_DESCUENTO[upper] !== undefined) {
+      setCodigoAplicado(upper);
+      setCodigoError("");
+    } else {
+      setCodigoAplicado(null);
+      setCodigoError("Código inválido");
+    }
+  }
+
+  function quitarCodigo() {
+    setCodigoAplicado(null);
+    setCodigo("");
+    setCodigoError("");
+  }
 
   // Si el carrito está vacío redirige al home
   if (items.length === 0) {
@@ -95,6 +120,9 @@ export default function CheckoutForm() {
 
     const fechaStr = fecha ? formatJueves(fecha) : "";
 
+    const descuentoLine = montoDescuento > 0
+      ? `🎟️ Descuento ${pctDescuento}% (${codigoAplicado}): -$${montoDescuento.toLocaleString("es-CL")}%0A`
+      : "";
     const delivery = costoDelivery > 0
       ? `📦 Envío: $${costoDelivery.toLocaleString("es-CL")}%0A`
       : `📦 Envío: *Gratis* ✅%0A`;
@@ -102,6 +130,7 @@ export default function CheckoutForm() {
     const msg =
       `Hola Frescon! 🌿%0A%0A` +
       `*Mi pedido:*%0A${lineas}%0A%0A` +
+      descuentoLine +
       delivery +
       `*Total: $${totalFinal.toLocaleString("es-CL")}*%0A%0A` +
       `*Datos de entrega:*%0A` +
@@ -279,12 +308,47 @@ export default function CheckoutForm() {
               <BankRow label="Email"    value={BANK_EMAIL}   />
             </div>
 
-            {/* Desglose envío + total */}
+            {/* Código de descuento */}
+            <div className="mb-5">
+              <p className="font-nunito font-black text-[#1A1A1A] text-xs mb-2">🎟️ ¿Tienes un código de descuento?</p>
+              {codigoAplicado ? (
+                <div className="flex items-center justify-between bg-[#3AAA35]/10 border border-[#3AAA35]/30 rounded-2xl px-4 py-2.5">
+                  <span className="font-nunito font-black text-[#3AAA35] text-sm">✓ {codigoAplicado} — {pctDescuento}% off</span>
+                  <button onClick={quitarCodigo} className="text-[#999] hover:text-red-400 text-xs font-nunito transition-colors">Quitar</button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ej: ALPASO"
+                    value={codigo}
+                    onChange={(e) => { setCodigo(e.target.value.toUpperCase()); setCodigoError(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && aplicarCodigo()}
+                    className="flex-1 px-4 py-2.5 rounded-2xl border-2 border-[#e5e5e5] focus:border-[#3AAA35] focus:outline-none font-nunito text-sm text-[#1A1A1A] placeholder-[#bbb]"
+                  />
+                  <button
+                    onClick={aplicarCodigo}
+                    className="bg-[#1A1A1A] hover:bg-[#333] text-white font-nunito font-black text-xs px-4 py-2.5 rounded-2xl transition-colors"
+                  >
+                    Aplicar
+                  </button>
+                </div>
+              )}
+              {codigoError && <p className="text-red-400 text-xs mt-1.5">{codigoError}</p>}
+            </div>
+
+            {/* Desglose envío + descuento + total */}
             <div className="bg-[#3AAA35]/8 rounded-2xl px-4 py-3 mb-5 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="font-nunito text-[#666] text-sm">Subtotal productos</span>
                 <span className="font-nunito font-black text-[#1A1A1A] text-sm">${totalValue.toLocaleString("es-CL")}</span>
               </div>
+              {montoDescuento > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="font-nunito text-[#3AAA35] text-sm">🎟️ Descuento {pctDescuento}% ({codigoAplicado})</span>
+                  <span className="font-nunito font-black text-[#3AAA35] text-sm">-${montoDescuento.toLocaleString("es-CL")}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="font-nunito text-[#666] text-sm flex items-center gap-1">
                   📦 Envío
@@ -355,6 +419,7 @@ export default function CheckoutForm() {
                   ? <span className="ml-2 text-[10px] bg-[#3AAA35] text-white font-black px-2 py-0.5 rounded-full">📦 Envío gratis</span>
                   : <span className="ml-2 text-[10px] text-[#999] font-nunito">+ $3.000 envío</span>
                 }
+                {montoDescuento > 0 && <span className="ml-1 text-[10px] bg-[#F9C514] text-[#1A1A1A] font-black px-2 py-0.5 rounded-full">{pctDescuento}% off</span>}
               </div>
               <span className="font-nunito font-black text-[#3AAA35] text-xl">
                 ${totalFinal.toLocaleString("es-CL")}
