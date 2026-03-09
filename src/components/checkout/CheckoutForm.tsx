@@ -340,31 +340,35 @@ export default function CheckoutForm() {
             {/* Desglose envío + descuento + total */}
             <div className="bg-[#3AAA35]/8 rounded-2xl px-4 py-3 mb-5 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="font-nunito text-[#666] text-sm">Subtotal productos</span>
+                <span className="font-nunito text-[#666] text-sm">Total sin descuentos</span>
                 <span className="font-nunito font-black text-[#1A1A1A] text-sm">${totalValue.toLocaleString("es-CL")}</span>
               </div>
-              {montoDescuento > 0 && (
+              {montoDescuento > 0 ? (
                 <div className="flex items-center justify-between">
                   <span className="font-nunito text-[#3AAA35] text-sm">🎟️ Descuento {pctDescuento}% ({codigoAplicado})</span>
                   <span className="font-nunito font-black text-[#3AAA35] text-sm">-${montoDescuento.toLocaleString("es-CL")}</span>
                 </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="font-nunito text-[#999] text-sm">Descuentos</span>
+                  <span className="font-nunito text-[#999] text-sm">—</span>
+                </div>
               )}
               <div className="flex items-center justify-between">
-                <span className="font-nunito text-[#666] text-sm flex items-center gap-1">
-                  📦 Envío
-                  {costoDelivery === 0 && (
-                    <span className="bg-[#3AAA35] text-white text-[10px] font-black px-2 py-0.5 rounded-full">GRATIS</span>
-                  )}
-                </span>
-                <span className={`font-nunito font-black text-sm ${costoDelivery === 0 ? "text-[#3AAA35] line-through" : "text-[#1A1A1A]"}`}>
-                  ${DELIVERY_COSTO.toLocaleString("es-CL")}
-                </span>
+                <span className="font-nunito text-[#666] text-sm">📦 Pago por envío</span>
+                {costoDelivery === 0 ? (
+                  <span className="font-nunito font-black text-[#3AAA35] text-sm flex items-center gap-1">
+                    Gratis <span className="bg-[#3AAA35] text-white text-[10px] font-black px-2 py-0.5 rounded-full">✓</span>
+                  </span>
+                ) : (
+                  <span className="font-nunito font-black text-[#1A1A1A] text-sm">${DELIVERY_COSTO.toLocaleString("es-CL")}</span>
+                )}
               </div>
               {costoDelivery > 0 && (
                 <p className="text-[#999] text-xs">Envío gratis en compras sobre ${DELIVERY_MINIMO.toLocaleString("es-CL")}</p>
               )}
               <div className="border-t border-[#3AAA35]/20 pt-2 flex items-center justify-between">
-                <span className="font-nunito font-black text-[#1A1A1A]">Total a transferir</span>
+                <span className="font-nunito font-black text-[#1A1A1A]">Total a pagar</span>
                 <span className="font-nunito font-black text-[#3AAA35] text-xl">${totalFinal.toLocaleString("es-CL")}</span>
               </div>
             </div>
@@ -412,18 +416,27 @@ export default function CheckoutForm() {
               ))}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-[#f0f0f0] flex items-center justify-between">
-              <div>
-                <span className="font-nunito font-black text-[#1A1A1A]">Total</span>
-                {costoDelivery === 0
-                  ? <span className="ml-2 text-[10px] bg-[#3AAA35] text-white font-black px-2 py-0.5 rounded-full">📦 Envío gratis</span>
-                  : <span className="ml-2 text-[10px] text-[#999] font-nunito">+ $3.000 envío</span>
-                }
-                {montoDescuento > 0 && <span className="ml-1 text-[10px] bg-[#F9C514] text-[#1A1A1A] font-black px-2 py-0.5 rounded-full">{pctDescuento}% off</span>}
+            <div className="mt-4 pt-4 border-t border-[#f0f0f0] flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-nunito text-[#999] text-xs">Total sin descuentos</span>
+                <span className="font-nunito font-black text-[#1A1A1A] text-xs">${totalValue.toLocaleString("es-CL")}</span>
               </div>
-              <span className="font-nunito font-black text-[#3AAA35] text-xl">
-                ${totalFinal.toLocaleString("es-CL")}
-              </span>
+              {montoDescuento > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="font-nunito text-[#3AAA35] text-xs">🎟️ Descuento {pctDescuento}%</span>
+                  <span className="font-nunito font-black text-[#3AAA35] text-xs">-${montoDescuento.toLocaleString("es-CL")}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="font-nunito text-[#999] text-xs">📦 Pago por envío</span>
+                <span className={`font-nunito font-black text-xs ${costoDelivery === 0 ? "text-[#3AAA35]" : "text-[#1A1A1A]"}`}>
+                  {costoDelivery === 0 ? "Gratis" : `$${DELIVERY_COSTO.toLocaleString("es-CL")}`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1.5 border-t border-[#f0f0f0] mt-0.5">
+                <span className="font-nunito font-black text-[#1A1A1A]">Total a pagar</span>
+                <span className="font-nunito font-black text-[#3AAA35] text-xl">${totalFinal.toLocaleString("es-CL")}</span>
+              </div>
             </div>
 
             {fecha && (
