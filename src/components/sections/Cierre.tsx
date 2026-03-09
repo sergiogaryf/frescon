@@ -29,7 +29,7 @@ export default function Cierre() {
               <div className="text-[#F9C514] text-6xl md:text-8xl">HOY!</div>
             </div>
             {/* Imagen absoluta en móvil — flota sobre las letras sin afectar layout */}
-            <div className="md:hidden absolute -top-20 right-0 z-10 pointer-events-none">
+            <div className="md:hidden absolute -top-20 -right-8 z-10 pointer-events-none">
               <Image
                 src="/images/elemento1.png"
                 alt="Canasta Frescon"
