@@ -76,12 +76,13 @@ export default function CartSidebar() {
               <span className="text-5xl">🛒</span>
               <p className="font-nunito font-black text-[#1A1A1A] text-lg">Tu pedido está vacío</p>
               <p className="text-[#999] text-sm">Agrega productos del catálogo</p>
-              <button
+              <Link
+                href="/catalogo"
                 onClick={toggleCart}
                 className="mt-2 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black px-6 py-2.5 rounded-full text-sm"
               >
                 Ver productos
-              </button>
+              </Link>
             </div>
           ) : (
             <>
