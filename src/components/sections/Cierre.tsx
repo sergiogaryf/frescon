@@ -56,7 +56,7 @@ export default function Cierre() {
             className="object-contain drop-shadow-2xl"
           />
           <a
-            href="#catalogo"
+            href="/catalogo"
             className="bg-[#F9C514] hover:bg-[#E0B010] text-[#1A1A1A] font-nunito font-black text-xl px-10 py-5 rounded-full transition-colors text-center w-full"
           >
             Ver productos →
@@ -76,7 +76,7 @@ export default function Cierre() {
         {/* Botones solo móvil */}
         <div className="md:hidden w-full flex flex-col gap-4">
           <a
-            href="#catalogo"
+            href="/catalogo"
             className="bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-xl px-10 py-5 rounded-full text-center"
           >
             Ver productos →

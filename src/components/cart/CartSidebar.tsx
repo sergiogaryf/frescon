@@ -196,6 +196,13 @@ export default function CartSidebar() {
             >
               Realizar compra
             </Link>
+            <Link
+              href="/catalogo"
+              onClick={toggleCart}
+              className="w-full border-2 border-[#e5e5e5] hover:border-[#3AAA35] text-[#1A1A1A] font-nunito font-black py-3 rounded-full transition-colors text-sm text-center"
+            >
+              + Seguir comprando
+            </Link>
 
             <a
               href={buildWhatsAppMessage()}

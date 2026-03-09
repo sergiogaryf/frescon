@@ -135,9 +135,9 @@ export default function CheckoutForm() {
       // Si falla Airtable igual continuamos — el WhatsApp es el respaldo
     }
 
+    const waUrl = buildWhatsApp();
     clearCart();
-    window.open(buildWhatsApp(), "_blank");
-    router.push("/");
+    window.location.href = waUrl;
   }
 
   return (
