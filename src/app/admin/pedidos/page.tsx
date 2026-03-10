@@ -97,12 +97,28 @@ export default function AdminPedidosPage() {
             {ESTADO_EMOJI[e] ?? ""} {e}
           </button>
         ))}
-        <button
-          onClick={fetchPedidos}
-          className="ml-auto px-4 py-1.5 rounded-full font-nunito font-black text-sm bg-white text-[#666] border border-[#e5e5e5] hover:border-[#3AAA35]/40 transition-all"
-        >
-          🔄 Actualizar
-        </button>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() => {
+              const headers = ["Nombre","Teléfono","Dirección","Fecha entrega","Total","Estado","Detalle"];
+              const rows = pedidos.map((p) => [p.nombre_cliente, p.telefono, p.direccion, p.fecha_entrega, p.total, p.estado, p.detalle_pedido.replace(/\n/g," | ")]);
+              const csv = "\uFEFF" + [headers,...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+              a.download = `pedidos-${new Date().toISOString().split("T")[0]}.csv`;
+              a.click();
+            }}
+            className="px-4 py-1.5 rounded-full font-nunito font-black text-sm bg-white text-[#666] border border-[#e5e5e5] hover:border-[#3AAA35]/40 transition-all"
+          >
+            ⬇️ CSV
+          </button>
+          <button
+            onClick={fetchPedidos}
+            className="px-4 py-1.5 rounded-full font-nunito font-black text-sm bg-white text-[#666] border border-[#e5e5e5] hover:border-[#3AAA35]/40 transition-all"
+          >
+            🔄 Actualizar
+          </button>
+        </div>
       </div>
 
       {/* Lista */}
