@@ -80,7 +80,7 @@ export async function getPedidos(options: {
     filters.push(`{estado} = "${options.estado}"`);
   }
   if (options.fecha) {
-    filters.push(`{fecha_entrega} = "${options.fecha}"`);
+    filters.push(`IS_SAME({fecha_entrega}, "${options.fecha}")`);
   }
   const filterByFormula =
     filters.length === 0 ? "" :
