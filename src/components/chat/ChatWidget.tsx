@@ -1,25 +1,57 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 
 interface Msg { role: "user" | "assistant"; content: string }
 
 const INITIAL: Msg = {
   role: "assistant",
-  content: "Hola! 🌿 Soy el asistente de Frescón.\n¿En qué te puedo ayudar? Puedo informarte sobre productos, precios, zonas de entrega o el estado de tu pedido.",
+  content: "¡Hola! 🐱 Soy Celia, la asistente de Frescón.\n¿En qué te puedo ayudar? Puedo informarte sobre productos, precios, zonas de entrega o el estado de tu pedido.",
 };
 
 export default function ChatWidget() {
+  const pathname = usePathname();
+  const isAdmin  = pathname?.startsWith("/admin") || pathname?.startsWith("/repartidor");
+
   const [open,     setOpen]     = useState(false);
   const [mensajes, setMensajes] = useState<Msg[]>([INITIAL]);
   const [input,    setInput]    = useState("");
   const [cargando, setCargando] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  /* ── Drag ── */
+  const [pos,     setPos]     = useState({ x: 24, y: 24 }); // bottom-left offset
+  const dragging  = useRef(false);
+  const dragStart = useRef({ mx: 0, my: 0, bx: 0, by: 0 });
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    dragging.current  = true;
+    dragStart.current = { mx: e.clientX, my: e.clientY, bx: pos.x, by: pos.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, [pos]);
+
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - dragStart.current.mx;
+    const dy = e.clientY - dragStart.current.my;
+    const newX = Math.max(8, Math.min(window.innerWidth  - 64, dragStart.current.bx + dx));
+    const newY = Math.max(8, Math.min(window.innerHeight - 64, dragStart.current.by - dy));
+    setPos({ x: newX, y: newY });
+  }, []);
+
+  const onPointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    const moved = Math.abs(e.clientX - dragStart.current.mx) + Math.abs(e.clientY - dragStart.current.my);
+    dragging.current = false;
+    if (moved < 6) setOpen((o) => !o); // click si no hubo movimiento
+  }, []);
+
+  /* ── Scroll ── */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensajes, cargando, open]);
 
+  /* ── Chat ── */
   async function enviar(texto?: string) {
     const msg = (texto ?? input).trim();
     if (!msg || cargando) return;
@@ -43,35 +75,42 @@ export default function ChatWidget() {
     setCargando(false);
   }
 
+  if (isAdmin) return null;
+
   return (
     <>
-      {/* Burbuja flotante */}
+      {/* Burbuja flotante — arrastrable */}
       <button
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Abrir asistente Frescón"
-        className="fixed bottom-6 left-6 z-50 w-14 h-14 bg-[#3AAA35] hover:bg-[#2A7A26] rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        aria-label="Abrir asistente Celia"
+        style={{ left: pos.x, bottom: pos.y, touchAction: "none" }}
+        className="fixed z-50 w-14 h-14 bg-[#3AAA35] hover:bg-[#2A7A26] rounded-full shadow-lg flex items-center justify-center transition-colors select-none cursor-grab active:cursor-grabbing"
       >
         {open ? (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
         ) : (
-          <span className="text-2xl">🌿</span>
+          <span className="text-2xl">🐱</span>
         )}
       </button>
 
       {/* Panel de chat */}
       {open && (
-        <div className="fixed bottom-24 left-6 z-50 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-[#f0f0f0]" style={{ maxHeight: "70vh" }}>
-
+        <div
+          className="fixed z-50 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-[#f0f0f0]"
+          style={{ left: Math.min(pos.x, window.innerWidth - 400), bottom: pos.y + 64, maxHeight: "70vh" }}
+        >
           {/* Header */}
           <div className="bg-[#3AAA35] px-4 py-3 flex items-center gap-3 flex-shrink-0">
-            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-              <span className="text-lg">🌿</span>
+            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-xl">
+              🐱
             </div>
             <div>
-              <p className="font-nunito font-black text-white text-sm">Asistente Frescón</p>
-              <p className="font-nunito text-white/70 text-xs">Frutas y verduras del Valle</p>
+              <p className="font-nunito font-black text-white text-sm">Celia</p>
+              <p className="font-nunito text-white/70 text-xs">Asistente Frescón · en línea</p>
             </div>
           </div>
 
@@ -80,8 +119,8 @@ export default function ChatWidget() {
             {mensajes.map((m, i) =>
               m.role === "assistant" ? (
                 <div key={i} className="flex gap-2 max-w-[85%]">
-                  <div className="w-7 h-7 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs">🌿</span>
+                  <div className="w-7 h-7 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0 mt-0.5 text-xs">
+                    🐱
                   </div>
                   <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
                     <p className="font-nunito text-[#1A1A1A] text-xs leading-relaxed whitespace-pre-wrap">{m.content}</p>
@@ -98,8 +137,8 @@ export default function ChatWidget() {
 
             {cargando && (
               <div className="flex gap-2 max-w-[85%]">
-                <div className="w-7 h-7 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs">🌿</span>
+                <div className="w-7 h-7 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0 text-xs">
+                  🐱
                 </div>
                 <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm flex items-center gap-1">
                   {[0, 1, 2].map((i) => (

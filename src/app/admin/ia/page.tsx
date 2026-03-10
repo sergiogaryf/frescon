@@ -37,7 +37,7 @@ function BubbleUsuario({ texto }: { texto: string }) {
 
 export default function AdminIAPage() {
   const [mensajes,  setMensajes]  = useState<Msg[]>([
-    { role: "assistant", content: "Hola! Soy tu asistente de operaciones Frescón 🌿\n\nPuedo ayudarte a analizar pedidos, calcular qué comprar en Quillota, revisar inventario y responder cualquier pregunta sobre el negocio.\n\n¿En qué te ayudo hoy?" },
+    { role: "assistant", content: "¡Hola! Soy Celia 🐱, tu asistente de operaciones Frescón.\n\nPuedo ayudarte a analizar pedidos, calcular qué comprar en Quillota, revisar inventario y responder cualquier pregunta sobre el negocio.\n\n¿En qué te ayudo hoy?" },
   ]);
   const [input,     setInput]     = useState("");
   const [cargando,  setCargando]  = useState(false);
@@ -73,8 +73,8 @@ export default function AdminIAPage() {
   return (
     <div className="flex flex-col h-screen lg:h-[calc(100vh-0px)] p-0">
       <div className="px-6 lg:px-8 py-5 border-b border-[#f0f0f0] bg-white flex-shrink-0">
-        <h1 className="font-nunito font-black text-[#1A1A1A] text-2xl">🤖 Asistente IA</h1>
-        <p className="text-[#999] font-nunito text-sm mt-0.5">Análisis operativo con inteligencia artificial</p>
+        <h1 className="font-nunito font-black text-[#1A1A1A] text-2xl">🐱 Celia — Asistente IA</h1>
+        <p className="text-[#999] font-nunito text-sm mt-0.5">Tu gata asistente, experta en operaciones Frescón</p>
       </div>
 
       {/* Acciones rápidas */}
