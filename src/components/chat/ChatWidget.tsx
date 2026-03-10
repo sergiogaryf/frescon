@@ -78,7 +78,7 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Burbuja flotante — bottom-right, arrastrable */}
+      {/* Burbuja flotante — bottom-right, arrastrable, siempre muestra Celia */}
       <button
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -87,15 +87,7 @@ export default function ChatWidget() {
         style={{ right: pos.x, bottom: pos.y, touchAction: "none" }}
         className="fixed z-50 w-24 h-24 flex items-center justify-center select-none cursor-grab active:cursor-grabbing hover:scale-110 transition-transform drop-shadow-xl"
       >
-        {open ? (
-          <div className="w-full h-full bg-[#3AAA35] rounded-full flex items-center justify-center shadow-lg transition-colors">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-          </div>
-        ) : (
-          <Image src="/images/celia.png" alt="Celia" width={96} height={96} className="w-full h-full object-contain" />
-        )}
+        <Image src="/images/celia.png" alt="Celia" width={96} height={96} className="w-full h-full object-contain" />
       </button>
 
       {/* Panel de chat — se abre hacia arriba y hacia la izquierda */}
@@ -107,12 +99,17 @@ export default function ChatWidget() {
           {/* Header */}
           <div className="bg-[#3AAA35] px-4 py-3 flex items-center gap-3 flex-shrink-0">
             <div className="w-10 h-10 rounded-full bg-white overflow-hidden flex-shrink-0">
-              <Image src="/images/celia.png" alt="Celia" width={40} height={40} className="w-full h-full object-cover" />
+              <Image src="/images/celia.png" alt="Celia" width={40} height={40} className="w-full h-full object-cover" style={{ objectPosition: "center 20%" }} />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="font-nunito font-black text-white text-sm">Celia</p>
               <p className="font-nunito text-white/70 text-xs">Asistente Frescón · en línea</p>
             </div>
+            <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition-colors p-1">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+            </button>
           </div>
 
           {/* Mensajes */}
@@ -121,7 +118,7 @@ export default function ChatWidget() {
               m.role === "assistant" ? (
                 <div key={i} className="flex gap-2 max-w-[85%]">
                   <div className="w-7 h-7 rounded-full bg-white overflow-hidden flex-shrink-0 mt-0.5 border border-[#e5e5e5]">
-                    <Image src="/images/celia.png" alt="Celia" width={28} height={28} className="w-full h-full object-cover" />
+                    <Image src="/images/celia.png" alt="Celia" width={28} height={28} className="w-full h-full object-cover" style={{ objectPosition: "center 20%" }} />
                   </div>
                   <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
                     <p className="font-nunito text-[#1A1A1A] text-xs leading-relaxed whitespace-pre-wrap">{m.content}</p>
@@ -138,7 +135,7 @@ export default function ChatWidget() {
             {cargando && (
               <div className="flex gap-2 max-w-[85%]">
                 <div className="w-7 h-7 rounded-full bg-white overflow-hidden flex-shrink-0 border border-[#e5e5e5]">
-                  <Image src="/images/celia.png" alt="Celia" width={28} height={28} className="w-full h-full object-cover" />
+                  <Image src="/images/celia.png" alt="Celia" width={28} height={28} className="w-full h-full object-cover" style={{ objectPosition: "center 20%" }} />
                 </div>
                 <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm flex items-center gap-1">
                   {[0, 1, 2].map((i) => (
