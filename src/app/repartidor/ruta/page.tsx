@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PedidoAdmin } from "@/lib/airtable";
 
-const WA = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "56912345678";
-
 function buildMsgEntregado(nombre: string) {
   return encodeURIComponent(`¡Hola ${nombre}! 🌿 Tu pedido Frescón fue entregado. ¡Buen provecho! Si tienes alguna consulta, responde este mensaje.`);
 }
