@@ -85,16 +85,16 @@ export default function ChatWidget() {
         onPointerUp={onPointerUp}
         aria-label="Abrir asistente Celia"
         style={{ right: pos.x, bottom: pos.y, touchAction: "none" }}
-        className="fixed z-50 w-16 h-16 rounded-full shadow-xl flex items-center justify-center select-none cursor-grab active:cursor-grabbing bg-white hover:scale-110 transition-transform overflow-hidden"
+        className="fixed z-50 w-16 h-16 flex items-center justify-center select-none cursor-grab active:cursor-grabbing hover:scale-110 transition-transform drop-shadow-xl"
       >
         {open ? (
-          <div className="w-full h-full bg-[#3AAA35] flex items-center justify-center rounded-full">
+          <div className="w-full h-full bg-[#3AAA35] rounded-full flex items-center justify-center shadow-lg">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
           </div>
         ) : (
-          <Image src="/images/celia.png" alt="Celia" width={64} height={64} className="w-full h-full object-cover" />
+          <Image src="/images/celia.png" alt="Celia" width={64} height={64} className="w-full h-full object-contain" />
         )}
       </button>
 
