@@ -85,16 +85,16 @@ export default function ChatWidget() {
         onPointerUp={onPointerUp}
         aria-label="Abrir asistente Celia"
         style={{ right: pos.x, bottom: pos.y, touchAction: "none" }}
-        className="fixed z-50 w-16 h-16 flex items-center justify-center select-none cursor-grab active:cursor-grabbing hover:scale-110 transition-transform drop-shadow-xl"
+        className="fixed z-50 w-24 h-24 flex items-center justify-center select-none cursor-grab active:cursor-grabbing hover:scale-110 transition-transform drop-shadow-xl"
       >
         {open ? (
-          <div className="w-full h-full bg-[#3AAA35] rounded-full flex items-center justify-center shadow-lg">
+          <div className="w-full h-full bg-[#3AAA35] rounded-full flex items-center justify-center shadow-lg transition-colors">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
           </div>
         ) : (
-          <Image src="/images/celia.png" alt="Celia" width={64} height={64} className="w-full h-full object-contain" />
+          <Image src="/images/celia.png" alt="Celia" width={96} height={96} className="w-full h-full object-contain" />
         )}
       </button>
 
@@ -102,7 +102,7 @@ export default function ChatWidget() {
       {open && (
         <div
           className="fixed z-50 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-[#f0f0f0]"
-          style={{ right: pos.x, bottom: pos.y + 64, maxHeight: "70vh" }}
+          style={{ right: pos.x, bottom: pos.y + 96, maxHeight: "70vh" }}
         >
           {/* Header */}
           <div className="bg-[#3AAA35] px-4 py-3 flex items-center gap-3 flex-shrink-0">
