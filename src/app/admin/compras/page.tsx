@@ -36,20 +36,27 @@ const PRECIOS: Record<string, PrecioMayorista> = {
 };
 
 /* ── Helpers ── */
-function getProximosJueves(n = 5): string[] {
+function getFechasDisponibles(n = 5): string[] {
   const dates: string[] = [];
+  // Incluir hoy siempre primero
+  const hoy = new Date().toISOString().split("T")[0];
+  dates.push(hoy);
+  // Luego los próximos jueves
   const d = new Date();
   const dayOfWeek = d.getDay();
   const daysToThursday = (4 - dayOfWeek + 7) % 7 || 7;
   d.setDate(d.getDate() + daysToThursday);
   for (let i = 0; i < n; i++) {
-    dates.push(d.toISOString().split("T")[0]);
+    const iso = d.toISOString().split("T")[0];
+    if (iso !== hoy) dates.push(iso); // evitar duplicado si hoy es jueves
     d.setDate(d.getDate() + 7);
   }
   return dates;
 }
 
 function formatFechaLabel(iso: string) {
+  const hoy = new Date().toISOString().split("T")[0];
+  if (iso === hoy) return "Hoy";
   const d = new Date(iso + "T12:00:00");
   return d.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
 }
@@ -121,7 +128,7 @@ function buildWhatsAppCompras(items: ItemAgregado[], fecha: string, totalPedidos
 
 /* ── Componente ── */
 export default function AdminComprasPage() {
-  const jueves = getProximosJueves(5);
+  const jueves = getFechasDisponibles(5);
   const [fecha,   setFecha]   = useState(jueves[0]);
   const [pedidos, setPedidos] = useState<PedidoAdmin[]>([]);
   const [loading, setLoading] = useState(true);
