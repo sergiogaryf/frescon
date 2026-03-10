@@ -20,8 +20,8 @@ export default function ChatWidget() {
   const [cargando, setCargando] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  /* ── Drag ── */
-  const [pos,     setPos]     = useState({ x: 24, y: 24 }); // bottom-left offset
+  /* ── Drag (posicionado desde bottom-right) ── */
+  const [pos,     setPos]     = useState({ x: 24, y: 24 });
   const dragging  = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, bx: 0, by: 0 });
 
@@ -33,9 +33,9 @@ export default function ChatWidget() {
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (!dragging.current) return;
-    const dx = e.clientX - dragStart.current.mx;
+    const dx = e.clientX - dragStart.current.mx; // positivo = mueve derecha → right disminuye
     const dy = e.clientY - dragStart.current.my;
-    const newX = Math.max(8, Math.min(window.innerWidth  - 64, dragStart.current.bx + dx));
+    const newX = Math.max(8, Math.min(window.innerWidth  - 64, dragStart.current.bx - dx));
     const newY = Math.max(8, Math.min(window.innerHeight - 64, dragStart.current.by - dy));
     setPos({ x: newX, y: newY });
   }, []);
@@ -43,7 +43,7 @@ export default function ChatWidget() {
   const onPointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     const moved = Math.abs(e.clientX - dragStart.current.mx) + Math.abs(e.clientY - dragStart.current.my);
     dragging.current = false;
-    if (moved < 6) setOpen((o) => !o); // click si no hubo movimiento
+    if (moved < 6) setOpen((o) => !o);
   }, []);
 
   /* ── Scroll ── */
@@ -56,11 +56,9 @@ export default function ChatWidget() {
     const msg = (texto ?? input).trim();
     if (!msg || cargando) return;
     setInput("");
-
     const nuevosMensajes: Msg[] = [...mensajes, { role: "user", content: msg }];
     setMensajes(nuevosMensajes);
     setCargando(true);
-
     try {
       const res = await fetch("/api/ia/chat", {
         method:  "POST",
@@ -79,13 +77,13 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Burbuja flotante — arrastrable */}
+      {/* Burbuja flotante — bottom-right, arrastrable */}
       <button
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         aria-label="Abrir asistente Celia"
-        style={{ left: pos.x, bottom: pos.y, touchAction: "none" }}
+        style={{ right: pos.x, bottom: pos.y, touchAction: "none" }}
         className="fixed z-50 w-14 h-14 bg-[#3AAA35] hover:bg-[#2A7A26] rounded-full shadow-lg flex items-center justify-center transition-colors select-none cursor-grab active:cursor-grabbing"
       >
         {open ? (
@@ -97,11 +95,11 @@ export default function ChatWidget() {
         )}
       </button>
 
-      {/* Panel de chat */}
+      {/* Panel de chat — se abre hacia arriba y hacia la izquierda */}
       {open && (
         <div
           className="fixed z-50 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-[#f0f0f0]"
-          style={{ left: Math.min(pos.x, window.innerWidth - 400), bottom: pos.y + 64, maxHeight: "70vh" }}
+          style={{ right: pos.x, bottom: pos.y + 64, maxHeight: "70vh" }}
         >
           {/* Header */}
           <div className="bg-[#3AAA35] px-4 py-3 flex items-center gap-3 flex-shrink-0">
@@ -134,12 +132,9 @@ export default function ChatWidget() {
                 </div>
               )
             )}
-
             {cargando && (
               <div className="flex gap-2 max-w-[85%]">
-                <div className="w-7 h-7 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0 text-xs">
-                  🐱
-                </div>
+                <div className="w-7 h-7 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0 text-xs">🐱</div>
                 <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm flex items-center gap-1">
                   {[0, 1, 2].map((i) => (
                     <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#3AAA35] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
