@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 
 interface Msg { role: "user" | "assistant"; content: string }
 
@@ -15,8 +16,8 @@ const ACCIONES_RAPIDAS = [
 function BubbleAsistente({ texto }: { texto: string }) {
   return (
     <div className="flex gap-3 max-w-[85%]">
-      <div className="w-8 h-8 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0 mt-0.5">
-        <span className="text-white text-sm">🌿</span>
+      <div className="w-8 h-8 rounded-full bg-white overflow-hidden flex-shrink-0 mt-0.5 border border-[#e5e5e5]">
+        <Image src="/images/celia.png" alt="Celia" width={32} height={32} className="w-full h-full object-cover" />
       </div>
       <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
         <p className="font-nunito text-[#1A1A1A] text-sm leading-relaxed whitespace-pre-wrap">{texto}</p>
@@ -102,8 +103,8 @@ export default function AdminIAPage() {
         )}
         {cargando && (
           <div className="flex gap-3 max-w-[85%]">
-            <div className="w-8 h-8 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-sm">🌿</span>
+            <div className="w-8 h-8 rounded-full bg-white overflow-hidden flex-shrink-0 border border-[#e5e5e5]">
+              <Image src="/images/celia.png" alt="Celia" width={32} height={32} className="w-full h-full object-cover" />
             </div>
             <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-1">
               {[0,1,2].map((i) => (

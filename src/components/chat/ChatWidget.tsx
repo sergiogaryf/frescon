@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 interface Msg { role: "user" | "assistant"; content: string }
 
@@ -84,14 +85,16 @@ export default function ChatWidget() {
         onPointerUp={onPointerUp}
         aria-label="Abrir asistente Celia"
         style={{ right: pos.x, bottom: pos.y, touchAction: "none" }}
-        className="fixed z-50 w-14 h-14 bg-[#3AAA35] hover:bg-[#2A7A26] rounded-full shadow-lg flex items-center justify-center transition-colors select-none cursor-grab active:cursor-grabbing"
+        className="fixed z-50 w-16 h-16 rounded-full shadow-xl flex items-center justify-center select-none cursor-grab active:cursor-grabbing bg-white hover:scale-110 transition-transform overflow-hidden"
       >
         {open ? (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-          </svg>
+          <div className="w-full h-full bg-[#3AAA35] flex items-center justify-center rounded-full">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+            </svg>
+          </div>
         ) : (
-          <span className="text-2xl">🐱</span>
+          <Image src="/images/celia.png" alt="Celia" width={64} height={64} className="w-full h-full object-cover" />
         )}
       </button>
 
@@ -103,8 +106,8 @@ export default function ChatWidget() {
         >
           {/* Header */}
           <div className="bg-[#3AAA35] px-4 py-3 flex items-center gap-3 flex-shrink-0">
-            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-xl">
-              🐱
+            <div className="w-10 h-10 rounded-full bg-white overflow-hidden flex-shrink-0">
+              <Image src="/images/celia.png" alt="Celia" width={40} height={40} className="w-full h-full object-cover" />
             </div>
             <div>
               <p className="font-nunito font-black text-white text-sm">Celia</p>
@@ -117,8 +120,8 @@ export default function ChatWidget() {
             {mensajes.map((m, i) =>
               m.role === "assistant" ? (
                 <div key={i} className="flex gap-2 max-w-[85%]">
-                  <div className="w-7 h-7 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0 mt-0.5 text-xs">
-                    🐱
+                  <div className="w-7 h-7 rounded-full bg-white overflow-hidden flex-shrink-0 mt-0.5 border border-[#e5e5e5]">
+                    <Image src="/images/celia.png" alt="Celia" width={28} height={28} className="w-full h-full object-cover" />
                   </div>
                   <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
                     <p className="font-nunito text-[#1A1A1A] text-xs leading-relaxed whitespace-pre-wrap">{m.content}</p>
@@ -134,7 +137,9 @@ export default function ChatWidget() {
             )}
             {cargando && (
               <div className="flex gap-2 max-w-[85%]">
-                <div className="w-7 h-7 rounded-full bg-[#3AAA35] flex items-center justify-center flex-shrink-0 text-xs">🐱</div>
+                <div className="w-7 h-7 rounded-full bg-white overflow-hidden flex-shrink-0 border border-[#e5e5e5]">
+                  <Image src="/images/celia.png" alt="Celia" width={28} height={28} className="w-full h-full object-cover" />
+                </div>
                 <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm flex items-center gap-1">
                   {[0, 1, 2].map((i) => (
                     <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#3AAA35] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
