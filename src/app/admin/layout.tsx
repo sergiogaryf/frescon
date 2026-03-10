@@ -5,8 +5,9 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
 const NAV = [
-  { href: "/admin/pedidos",   label: "Pedidos",   icon: "📦" },
-  { href: "/admin/compras",   label: "Compras",   icon: "🛒" },
+  { href: "/admin/pedidos",    label: "Pedidos",    icon: "📦" },
+  { href: "/admin/compras",    label: "Compras",    icon: "🛒" },
+  { href: "/admin/inventario", label: "Inventario", icon: "📊" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
