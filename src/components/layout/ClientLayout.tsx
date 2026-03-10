@@ -2,6 +2,7 @@
 
 import CartSidebar from "@/components/cart/CartSidebar";
 import PromoPopup from "@/components/PromoPopup";
+import ChatWidget from "@/components/chat/ChatWidget";
 
 const WA = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "56912345678";
 
@@ -11,6 +12,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {children}
       <CartSidebar />
       <PromoPopup />
+
+      <ChatWidget />
 
       {/* Botón WhatsApp flotante */}
       <a
