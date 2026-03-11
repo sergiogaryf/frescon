@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 
 const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "56912345678";
@@ -47,7 +48,8 @@ const CODIGOS_DESCUENTO: Record<string, number> = { FRESCON10: 10 };
 
 export default function CheckoutForm() {
   const { items, total, clearCart } = useCartStore();
-  const totalValue    = total();
+  const router      = useRouter();
+  const totalValue  = total();
 
   const jueves = useMemo(() => getProximosJueves(4), []);
 
@@ -194,8 +196,26 @@ export default function CheckoutForm() {
     }
 
     const waUrl = buildWhatsApp();
+
+    // Guardar datos para la página de confirmación
+    sessionStorage.setItem("frescon_pedido_confirmado", JSON.stringify({
+      nombre,
+      telefono,
+      direccion,
+      fecha: fecha ? formatJueves(fecha) : "",
+      total: totalFinal,
+      items: items.map(({ product: p, cantidad }) => ({
+        nombre:   p.nombre,
+        cantidad,
+        unidad:   p.unidad,
+        precio:   p.precio,
+        imagen:   p.imagen,
+      })),
+      waUrl,
+    }));
+
     clearCart();
-    window.location.href = waUrl;
+    router.push("/confirmacion");
   }
 
   return (
