@@ -18,7 +18,7 @@ function cajaToProduct(caja: Caja): Product {
     es_estrella: true,
     origen:      "Valle de Aconcagua",
     descripcion: caja.descripcion,
-    imagen:      "",
+    imagen:      caja.imagen,
     badges:      [caja.badge],
   };
 }
@@ -37,7 +37,12 @@ function CajaCard({ caja }: { caja: Caja }) {
     <div className={`${caja.color} rounded-3xl p-6 flex flex-col gap-4 border border-white shadow-sm hover:shadow-md transition-shadow`}>
       {/* Emoji + badge */}
       <div className="flex items-start justify-between">
-        <span className="text-5xl">{caja.emoji}</span>
+        <div className="relative inline-flex flex-col items-start gap-1">
+          <span className="text-5xl">{caja.emoji}</span>
+          <span className="bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[10px] px-2 py-0.5 rounded-full leading-tight">
+            Próximamente
+          </span>
+        </div>
         <span className="bg-white/80 backdrop-blur-sm text-[#3AAA35] font-nunito font-black text-xs px-3 py-1 rounded-full border border-[#3AAA35]/20">
           {caja.badge}
         </span>
@@ -49,22 +54,40 @@ function CajaCard({ caja }: { caja: Caja }) {
         <p className="text-[#666] text-sm mt-1 font-nunito leading-snug">{caja.descripcion}</p>
       </div>
 
-      {/* Productos incluidos */}
-      <div className="flex flex-wrap gap-1.5">
-        {caja.productos.map((prod) => (
-          <span
-            key={prod}
-            className="bg-white/70 text-[#444] font-nunito text-xs px-2.5 py-1 rounded-full border border-white"
-          >
-            {prod}
-          </span>
+      {/* Imagen principal del producto destacado */}
+      <div className="relative w-full h-36 rounded-2xl overflow-hidden bg-white/60">
+        <Image
+          src={caja.imagen}
+          alt={caja.nombre}
+          fill
+          className="object-contain p-3"
+        />
+      </div>
+
+      {/* Productos incluidos con detalle */}
+      <div className="flex flex-col gap-1.5">
+        {caja.items.map((item) => (
+          <div key={item.nombre} className="flex items-center gap-2">
+            <div className="relative w-7 h-7 flex-shrink-0">
+              <Image src={item.imagen} alt={item.nombre} fill className="object-contain" />
+            </div>
+            <span className="flex-1 font-nunito text-xs text-[#444] truncate">
+              {item.nombre} <span className="text-[#999]">({item.cantidad})</span>
+            </span>
+            <span className="font-nunito font-black text-xs text-[#3AAA35] flex-shrink-0">
+              ${item.subtotal.toLocaleString("es-CL")}
+            </span>
+          </div>
         ))}
       </div>
 
       {/* Precio + ahorro + botón */}
-      <div className="mt-auto flex items-end justify-between gap-3 pt-2">
+      <div className="mt-auto flex items-end justify-between gap-3 pt-2 border-t border-black/5">
         <div>
-          <p className="font-nunito font-black text-[#1A1A1A] text-2xl">
+          <p className="font-nunito text-[#999] text-sm line-through">
+            ${caja.precio_original.toLocaleString("es-CL")}
+          </p>
+          <p className="font-nunito font-black text-[#1A1A1A] text-2xl leading-tight">
             ${caja.precio.toLocaleString("es-CL")}
           </p>
           <span className="inline-block bg-[#3AAA35] text-white font-nunito font-black text-xs px-2.5 py-0.5 rounded-full mt-1">
@@ -72,14 +95,10 @@ function CajaCard({ caja }: { caja: Caja }) {
           </span>
         </div>
         <button
-          onClick={handleAgregar}
-          className={`flex-shrink-0 font-nunito font-black text-sm px-5 py-3 rounded-full transition-all ${
-            agregada
-              ? "bg-[#3AAA35] text-white scale-95"
-              : "bg-[#1A1A1A] hover:bg-[#3AAA35] text-white"
-          }`}
+          disabled
+          className="flex-shrink-0 font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#e5e5e5] text-[#aaa] cursor-not-allowed"
         >
-          {agregada ? "✓ Agregada" : "Agregar al carrito"}
+          Próximamente
         </button>
       </div>
     </div>
@@ -114,7 +133,7 @@ export default function CajasPage() {
             CAJAS <span className="text-[#3AAA35]">FRESCÓN</span>
           </h1>
           <p className="text-[#666] mt-2 text-lg font-nunito">
-            Selección curada por Celia 🐱
+            Selección creada por Celia 🐱
           </p>
         </div>
       </div>

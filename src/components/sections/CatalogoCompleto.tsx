@@ -2,9 +2,11 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Product } from "@/types";
 import ProductCard from "@/components/products/ProductCard";
 import Navbar from "@/components/layout/Navbar";
+import { CAJAS } from "@/lib/cajas";
 
 const categorias = [
   { key: "todos",    label: "Todos",    icon: "🛒" },
@@ -109,8 +111,69 @@ export default function CatalogoCompleto({ productos }: { productos: Product[] }
           ))}
         </div>
 
-        {/* Grid productos */}
-        {paginados.length > 0 ? (
+        {/* Grid kits (cajas) */}
+        {filtro === "kits" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+            {CAJAS.map((caja) => (
+              <div key={caja.id} className={`${caja.color} rounded-3xl p-6 flex flex-col gap-4 border border-white shadow-sm`}>
+                {/* Emoji + badge */}
+                <div className="flex items-start justify-between">
+                  <div className="relative inline-flex flex-col items-start gap-1">
+                    <span className="text-5xl">{caja.emoji}</span>
+                    <span className="bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[10px] px-2 py-0.5 rounded-full leading-tight">
+                      Próximamente
+                    </span>
+                  </div>
+                  <span className="bg-white/80 backdrop-blur-sm text-[#3AAA35] font-nunito font-black text-xs px-3 py-1 rounded-full border border-[#3AAA35]/20">
+                    {caja.badge}
+                  </span>
+                </div>
+
+                {/* Nombre + descripción */}
+                <div>
+                  <h2 className="font-nunito font-black text-[#1A1A1A] text-lg leading-tight">{caja.nombre}</h2>
+                  <p className="text-[#666] text-sm mt-1 font-nunito leading-snug">{caja.descripcion}</p>
+                </div>
+
+                {/* Imagen */}
+                <div className="relative w-full h-32 rounded-2xl overflow-hidden bg-white/60">
+                  <Image src={caja.imagen} alt={caja.nombre} fill className="object-contain p-3" />
+                </div>
+
+                {/* Items */}
+                <div className="flex flex-col gap-1.5">
+                  {caja.items.map((item) => (
+                    <div key={item.nombre} className="flex items-center gap-2">
+                      <div className="relative w-6 h-6 flex-shrink-0">
+                        <Image src={item.imagen} alt={item.nombre} fill className="object-contain" />
+                      </div>
+                      <span className="flex-1 font-nunito text-xs text-[#444] truncate">
+                        {item.nombre} <span className="text-[#999]">({item.cantidad})</span>
+                      </span>
+                      <span className="font-nunito font-black text-xs text-[#3AAA35] flex-shrink-0">
+                        ${item.subtotal.toLocaleString("es-CL")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Precio + botón */}
+                <div className="mt-auto flex items-end justify-between gap-3 pt-2 border-t border-black/5">
+                  <div>
+                    <p className="font-nunito text-[#999] text-sm line-through">${caja.precio_original.toLocaleString("es-CL")}</p>
+                    <p className="font-nunito font-black text-[#1A1A1A] text-2xl leading-tight">${caja.precio.toLocaleString("es-CL")}</p>
+                    <span className="inline-block bg-[#3AAA35] text-white font-nunito font-black text-xs px-2.5 py-0.5 rounded-full mt-1">
+                      Ahorras {caja.ahorro}%
+                    </span>
+                  </div>
+                  <button disabled className="flex-shrink-0 font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#e5e5e5] text-[#aaa] cursor-not-allowed">
+                    Próximamente
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : paginados.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mb-10">
             {paginados.map((producto) => (
               <ProductCard key={producto.id} product={producto} />
