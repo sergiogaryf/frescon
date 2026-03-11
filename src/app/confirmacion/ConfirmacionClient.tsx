@@ -137,8 +137,15 @@ export default function ConfirmacionClient() {
         )}
 
         <Link
+          href="/seguimiento"
+          className="w-full block text-center bg-white border-2 border-[#e5e5e5] hover:border-[#3AAA35] text-[#1A1A1A] font-nunito font-black py-3.5 rounded-full transition-colors text-sm mb-3"
+        >
+          🚗 Seguir mi pedido
+        </Link>
+
+        <Link
           href="/"
-          className="w-full block text-center bg-white border-2 border-[#e5e5e5] hover:border-[#3AAA35] text-[#1A1A1A] font-nunito font-black py-3.5 rounded-full transition-colors text-sm"
+          className="w-full block text-center text-[#999] hover:text-[#3AAA35] font-nunito font-black py-2 transition-colors text-sm"
         >
           Volver al inicio
         </Link>
