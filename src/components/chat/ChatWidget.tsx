@@ -266,7 +266,7 @@ export default function ChatWidget() {
         onPointerUp={onPointerUp}
         aria-label="Abrir asistente Celia"
         style={{ right: pos.x, bottom: pos.y, touchAction: "none" }}
-        className={`fixed z-50 w-24 h-24 flex items-center justify-center select-none cursor-grab active:cursor-grabbing hover:scale-110 transition-transform drop-shadow-xl${!open ? " animate-bounce" : ""}`}
+        className="fixed z-50 w-24 h-24 flex items-center justify-center select-none cursor-grab active:cursor-grabbing drop-shadow-xl transition-transform duration-300 ease-out hover:scale-110 hover:drop-shadow-2xl"
       >
         <Image src="/images/celia.png" alt="Celia" width={96} height={96} className="w-full h-full object-contain" />
       </button>
