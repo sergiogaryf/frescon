@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 const NAV = [
   { href: "/admin/pedidos",        label: "Pedidos",        icon: "📦" },
@@ -19,6 +20,7 @@ const NAV = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   async function logout() {
     await fetch("/api/admin/auth", { method: "DELETE" });
@@ -65,33 +67,52 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* ── Nav móvil ── */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-[#f0f0f0] z-20 px-4 py-3 flex items-center justify-between">
-        <Image src="/images/Logo.png" alt="Frescon" width={72} height={32} className="object-contain" />
-        <div className="flex items-center gap-1.5">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`px-3 py-1.5 rounded-xl font-nunito font-black text-xs transition-all ${
-                pathname.startsWith(item.href)
-                  ? "bg-[#3AAA35] text-white"
-                  : "text-[#666] bg-[#f9fafb]"
-              }`}
-            >
-              {item.icon} {item.label}
-            </Link>
-          ))}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-20">
+        {/* Barra superior: logo centrado sobre fondo verde */}
+        <div className="bg-[#2A7A26] flex items-center justify-between px-4 py-3">
+          <div className="w-8" />
+          <Image src="/images/Logo.png" alt="Frescon" width={80} height={36} className="object-contain" />
           <button
-            onClick={logout}
-            className="ml-1 text-[#bbb] text-xs font-nunito px-2 py-1.5 hover:text-red-400 transition-colors"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="w-8 h-8 flex flex-col items-center justify-center gap-1.5"
+            aria-label="Menú"
           >
-            🔒
+            <span className={`block w-5 h-0.5 bg-white transition-all ${menuOpen ? "rotate-45 translate-y-2" : ""}`} />
+            <span className={`block w-5 h-0.5 bg-white transition-all ${menuOpen ? "opacity-0" : ""}`} />
+            <span className={`block w-5 h-0.5 bg-white transition-all ${menuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
           </button>
         </div>
+
+        {/* Menú desplegable */}
+        {menuOpen && (
+          <div className="bg-white border-b border-[#f0f0f0] shadow-lg px-4 py-3 flex flex-col gap-1">
+            {NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl font-nunito font-black text-sm transition-all ${
+                  pathname.startsWith(item.href)
+                    ? "bg-[#3AAA35] text-white"
+                    : "text-[#666] bg-[#f9fafb] hover:text-[#1A1A1A]"
+                }`}
+              >
+                <span>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+            <button
+              onClick={() => { setMenuOpen(false); logout(); }}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-nunito font-black text-sm text-[#bbb] hover:bg-red-50 hover:text-red-400 transition-all"
+            >
+              🔒 Salir
+            </button>
+          </div>
+        )}
       </header>
 
       {/* ── Contenido ── */}
-      <main className="lg:ml-56 flex-1 min-h-screen pt-16 lg:pt-0">
+      <main className="lg:ml-56 flex-1 min-h-screen pt-[62px] lg:pt-0">
         {children}
       </main>
     </div>
