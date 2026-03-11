@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { getProductos, getPedidos } from "@/lib/airtable";
+import { getProductos, getPedidos, guardarMemoria, getMemoriaReciente } from "@/lib/airtable";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -154,10 +154,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "ANTHROPIC_API_KEY no configurada" }, { status: 500 });
   }
 
-  const { messages, context } = await req.json();
+  const { messages, context, sesion_id } = await req.json();
   const isAdmin = context === "admin";
-  const system  = isAdmin ? SYSTEM_ADMIN : SYSTEM_CLIENTE;
   const tools   = isAdmin ? TOOLS_ADMIN  : TOOLS_CLIENTE;
+
+  // Cargar memoria reciente para enriquecer el contexto
+  const memoria = await getMemoriaReciente(context, 15);
+  const memoriaTexto = memoria.length > 0
+    ? "\n\nCONVERSACIONES PREVIAS FRECUENTES (usa esto para aprender y mejorar tus respuestas):\n" +
+      memoria.slice(0, 8).map((m) =>
+        `[${m.categoria}] P: ${m.pregunta.slice(0, 120)} → R: ${m.respuesta.slice(0, 200)}`
+      ).join("\n")
+    : "";
+
+  const system = (isAdmin ? SYSTEM_ADMIN : SYSTEM_CLIENTE) + memoriaTexto;
 
   // Formato Anthropic
   type AntMsg = { role: "user" | "assistant"; content: Anthropic.MessageParam["content"] };
@@ -209,6 +219,28 @@ export async function POST(req: Request) {
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)
     .join("\n");
+
+  // Guardar en memoria: solo el último mensaje del usuario y la respuesta
+  const ultimaPregunta = [...messages].reverse().find((m: { role: string }) => m.role === "user");
+  if (ultimaPregunta && text) {
+    const herramientasUsadas = msgs
+      .flatMap((m) => Array.isArray(m.content) ? m.content : [])
+      .filter((b): b is Anthropic.ToolUseBlock => (b as Anthropic.ToolUseBlock).type === "tool_use")
+      .map((b) => b.name)
+      .join(", ");
+
+    guardarMemoria({
+      fecha:        new Date().toISOString(),
+      contexto:     context,
+      pregunta:     ultimaPregunta.content,
+      respuesta:    text,
+      categoria:    "",
+      herramientas: herramientasUsadas,
+      sesion_id:    sesion_id ?? "",
+      util:         false,
+      notas_admin:  "",
+    });
+  }
 
   return NextResponse.json({ response: text });
 }

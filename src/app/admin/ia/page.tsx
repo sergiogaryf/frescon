@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Msg { role: "user" | "assistant"; content: string }
 
@@ -43,6 +44,7 @@ export default function AdminIAPage() {
   const [input,     setInput]     = useState("");
   const [cargando,  setCargando]  = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const sesionId  = useRef(`adm_${Date.now()}_${Math.random().toString(36).slice(2,7)}`);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -61,7 +63,7 @@ export default function AdminIAPage() {
       const res = await fetch("/api/ia/chat", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ messages: nuevosMensajes, context: "admin" }),
+        body:    JSON.stringify({ messages: nuevosMensajes, context: "admin", sesion_id: sesionId.current }),
       });
       const data = await res.json();
       setMensajes((prev) => [...prev, { role: "assistant", content: data.response ?? data.error ?? "Error al responder." }]);
@@ -73,9 +75,17 @@ export default function AdminIAPage() {
 
   return (
     <div className="flex flex-col h-screen lg:h-[calc(100vh-0px)] p-0">
-      <div className="px-6 lg:px-8 py-5 border-b border-[#f0f0f0] bg-white flex-shrink-0">
-        <h1 className="font-nunito font-black text-[#1A1A1A] text-2xl">🐱 Celia — Asistente IA</h1>
-        <p className="text-[#999] font-nunito text-sm mt-0.5">Tu gata asistente, experta en operaciones Frescón</p>
+      <div className="px-6 lg:px-8 py-5 border-b border-[#f0f0f0] bg-white flex-shrink-0 flex items-center justify-between">
+        <div>
+          <h1 className="font-nunito font-black text-[#1A1A1A] text-2xl">🐱 Celia — Asistente IA</h1>
+          <p className="text-[#999] font-nunito text-sm mt-0.5">Tu gata asistente, experta en operaciones Frescón</p>
+        </div>
+        <Link
+          href="/admin/ia/memoria"
+          className="text-xs font-nunito font-black px-4 py-2 rounded-full border border-[#e5e5e5] text-[#666] hover:border-[#3AAA35]/40 transition-all"
+        >
+          🧠 Ver memoria
+        </Link>
       </div>
 
       {/* Acciones rápidas */}

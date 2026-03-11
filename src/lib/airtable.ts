@@ -5,8 +5,9 @@ const base = new Airtable({
   apiKey: process.env.AIRTABLE_API_KEY,
 }).base(process.env.AIRTABLE_BASE_ID!);
 
-export const productsTable = base("Productos");
-export const ordersTable   = base("Pedidos");
+export const productsTable  = base("Productos");
+export const ordersTable    = base("Pedidos");
+export const memoriaTable   = base("CeliaMemoria");
 
 /* ── Productos ── */
 
@@ -111,4 +112,108 @@ export async function getPedidos(options: {
 
 export async function updatePedido(id: string, fields: Record<string, unknown>) {
   await ordersTable.update(id, fields as Record<string, string | number | boolean>);
+}
+
+/* ── Celia Memoria ── */
+
+export interface MemoriaEntry {
+  id:          string;
+  fecha:       string;
+  contexto:    string;
+  pregunta:    string;
+  respuesta:   string;
+  categoria:   string;
+  herramientas: string;
+  sesion_id:   string;
+  util:        boolean;
+  notas_admin: string;
+}
+
+function detectarCategoria(pregunta: string): string {
+  const q = pregunta.toLowerCase();
+  if (/precio|costo|cuánto|cuanto|valor/.test(q))           return "precios";
+  if (/pedido|orden|compra|estado/.test(q))                 return "pedidos";
+  if (/entreg|reparto|jueves|horario|cuando|cuándo/.test(q)) return "entregas";
+  if (/zona|barrio|concón|concon|sector/.test(q))           return "zonas";
+  if (/product|fruta|verdura|catálog|catalogo/.test(q))     return "productos";
+  if (/comprar|quillota|mayorista|malla/.test(q))           return "compras_admin";
+  if (/sobrante|merma|inventario|stock/.test(q))            return "inventario";
+  if (/ingreso|venta|ganancia|revenue/.test(q))             return "finanzas";
+  return "general";
+}
+
+export async function guardarMemoria(entry: Omit<MemoriaEntry, "id">) {
+  try {
+    await memoriaTable.create({
+      fecha:        entry.fecha,
+      contexto:     entry.contexto,
+      pregunta:     entry.pregunta.slice(0, 2000),
+      respuesta:    entry.respuesta.slice(0, 2000),
+      categoria:    entry.categoria || detectarCategoria(entry.pregunta),
+      herramientas: entry.herramientas,
+      sesion_id:    entry.sesion_id,
+      util:         false,
+    });
+  } catch (e) {
+    console.error("Error guardando memoria Celia:", e);
+  }
+}
+
+export async function getMemoriaReciente(contexto: string, limite = 20): Promise<MemoriaEntry[]> {
+  try {
+    const records = await memoriaTable
+      .select({
+        filterByFormula: `{contexto} = "${contexto}"`,
+        sort:            [{ field: "fecha", direction: "desc" }],
+        maxRecords:      limite,
+      })
+      .all();
+    return records.map((r) => ({
+      id:           r.id,
+      fecha:        String(r.fields.fecha        ?? ""),
+      contexto:     String(r.fields.contexto     ?? ""),
+      pregunta:     String(r.fields.pregunta     ?? ""),
+      respuesta:    String(r.fields.respuesta    ?? ""),
+      categoria:    String(r.fields.categoria    ?? ""),
+      herramientas: String(r.fields.herramientas ?? ""),
+      sesion_id:    String(r.fields.sesion_id    ?? ""),
+      util:         Boolean(r.fields.util),
+      notas_admin:  String(r.fields.notas_admin  ?? ""),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getMemoriaStats(): Promise<{
+  total: number;
+  por_categoria: Record<string, number>;
+  por_contexto:  Record<string, number>;
+  frecuentes:    Array<{ pregunta: string; categoria: string; fecha: string }>;
+}> {
+  try {
+    const records = await memoriaTable
+      .select({ sort: [{ field: "fecha", direction: "desc" }], maxRecords: 200 })
+      .all();
+
+    const por_categoria: Record<string, number> = {};
+    const por_contexto:  Record<string, number> = {};
+
+    for (const r of records) {
+      const cat = String(r.fields.categoria ?? "general");
+      const ctx = String(r.fields.contexto  ?? "cliente");
+      por_categoria[cat] = (por_categoria[cat] ?? 0) + 1;
+      por_contexto[ctx]  = (por_contexto[ctx]  ?? 0) + 1;
+    }
+
+    const frecuentes = records.slice(0, 10).map((r) => ({
+      pregunta:  String(r.fields.pregunta  ?? "").slice(0, 100),
+      categoria: String(r.fields.categoria ?? ""),
+      fecha:     String(r.fields.fecha     ?? ""),
+    }));
+
+    return { total: records.length, por_categoria, por_contexto, frecuentes };
+  } catch {
+    return { total: 0, por_categoria: {}, por_contexto: {}, frecuentes: [] };
+  }
 }

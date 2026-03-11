@@ -19,7 +19,8 @@ export default function ChatWidget() {
   const [mensajes, setMensajes] = useState<Msg[]>([INITIAL]);
   const [input,    setInput]    = useState("");
   const [cargando, setCargando] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomRef  = useRef<HTMLDivElement>(null);
+  const sesionId   = useRef(`cli_${Date.now()}_${Math.random().toString(36).slice(2,7)}`);
 
   /* ── Drag (posicionado desde bottom-right) ── */
   const [pos,     setPos]     = useState({ x: 24, y: 24 });
@@ -64,7 +65,7 @@ export default function ChatWidget() {
       const res = await fetch("/api/ia/chat", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ messages: nuevosMensajes, context: "cliente" }),
+        body:    JSON.stringify({ messages: nuevosMensajes, context: "cliente", sesion_id: sesionId.current }),
       });
       const data = await res.json();
       setMensajes((prev) => [...prev, { role: "assistant", content: data.response ?? data.error ?? "Error al responder." }]);
