@@ -68,8 +68,11 @@ export default function CheckoutForm() {
   const [codigoRef,      setCodigoRef]      = useState("");
   const [refAplicado,    setRefAplicado]    = useState<{ codigo: string; mensaje: string } | null>(null);
   const [refError,       setRefError]       = useState("");
+  const [telPendiente,   setTelPendiente]   = useState("");
+  const [pendienteAplicado, setPendienteAplicado] = useState(0);
+  const [pendienteError,    setPendienteError]    = useState("");
 
-  const pctDescuento   = (codigoAplicado ? (CODIGOS_DESCUENTO[codigoAplicado] ?? 0) : 0) + (refAplicado ? 5 : 0);
+  const pctDescuento   = (codigoAplicado ? (CODIGOS_DESCUENTO[codigoAplicado] ?? 0) : 0) + (refAplicado ? 5 : 0) + pendienteAplicado;
   const montoDescuento = Math.round(totalValue * pctDescuento / 100);
   const subtotalConDesc = totalValue - montoDescuento;
   const costoDelivery  = subtotalConDesc >= DELIVERY_MINIMO ? 0 : DELIVERY_COSTO;
@@ -104,6 +107,23 @@ export default function CheckoutForm() {
       setRefError("");
     } else {
       setRefError(data.error ?? "Código inválido");
+    }
+  }
+
+  async function canjearPendiente() {
+    if (!telPendiente.trim()) return;
+    const res = await fetch("/api/referidos", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telefono: telPendiente }),
+    });
+    const data = await res.json();
+    if (data.descuento > 0) {
+      setPendienteAplicado(data.descuento);
+      setPendienteError("");
+    } else {
+      setPendienteAplicado(0);
+      setPendienteError("No tienes descuento acumulado por referidos");
     }
   }
 
@@ -397,6 +417,34 @@ export default function CheckoutForm() {
               </div>
               {refAplicado && <p className="font-nunito text-xs text-[#3AAA35] mt-1">{refAplicado.mensaje}</p>}
               {refError && <p className="font-nunito text-xs text-red-500 mt-1">{refError}</p>}
+
+              {/* Descuento pendiente por referidos */}
+              {pendienteAplicado > 0 ? (
+                <div className="flex items-center gap-2 mt-2 bg-[#F9C514]/20 border border-[#F9C514]/40 rounded-xl px-3 py-2">
+                  <span className="font-nunito font-black text-[#1A1A1A] text-xs">🎁 Descuento por referidos: {pendienteAplicado}% off</span>
+                </div>
+              ) : (
+                <div className="mt-2">
+                  <p className="font-nunito text-[#999] text-xs mb-1.5">🎁 ¿Tienes descuento acumulado por referidos?</p>
+                  <div className="flex gap-2">
+                    <input
+                      value={telPendiente}
+                      onChange={(e) => { setTelPendiente(e.target.value); setPendienteError(""); }}
+                      placeholder="Tu teléfono +56 9..."
+                      className="flex-1 px-3 py-2 rounded-xl border border-[#e5e5e5] font-nunito text-xs text-[#1A1A1A] placeholder-[#bbb] focus:border-[#F9C514] focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={canjearPendiente}
+                      disabled={!telPendiente.trim()}
+                      className="px-3 py-2 rounded-xl bg-[#F9C514] hover:bg-[#E0B010] disabled:opacity-40 font-nunito font-black text-xs text-[#1A1A1A] transition-colors"
+                    >
+                      Canjear
+                    </button>
+                  </div>
+                  {pendienteError && <p className="font-nunito text-xs text-[#999] mt-1">{pendienteError}</p>}
+                </div>
+              )}
             </div>
 
             {/* Desglose envío + descuento + total */}

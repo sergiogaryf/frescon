@@ -53,10 +53,13 @@ export async function GET(req: Request) {
       return notas.includes(`referido:${codigo}`) || notas.includes(codigo);
     });
 
+    const descuento_pendiente = Number(records[0]?.fields.descuento_pendiente ?? 0);
+
     return NextResponse.json({
       codigo,
       total_referidos: pedidosReferidos.length,
       descuento_pct: 5,
+      descuento_pendiente,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
@@ -89,6 +92,33 @@ export async function POST(req: Request) {
       descuento_pct: 5,
       mensaje: `¡Código de ${nombre} aplicado! Ambos obtienen 5% de descuento 🎉`,
     });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
+
+// PUT: canjear descuento pendiente (lo consume y retorna el % acumulado)
+export async function PUT(req: Request) {
+  const { telefono } = await req.json();
+  if (!telefono) return NextResponse.json({ error: "telefono requerido" }, { status: 400 });
+
+  try {
+    const limpio = telefono.replace(/\D/g, "").slice(-9);
+    const records = await perfilesTable
+      .select({ filterByFormula: `SEARCH("${limpio}", {telefono})`, maxRecords: 1 })
+      .all();
+
+    if (!records.length) return NextResponse.json({ descuento: 0 });
+
+    const descuento = Number(records[0].fields.descuento_pendiente ?? 0);
+    if (descuento <= 0) return NextResponse.json({ descuento: 0 });
+
+    // Consumir el descuento
+    await perfilesTable.update(records[0].id, {
+      descuento_pendiente: 0,
+    } as unknown as Record<string, string | number | boolean>);
+
+    return NextResponse.json({ descuento });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

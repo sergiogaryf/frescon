@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { crearPedido } from "@/lib/airtable";
+import { crearPedido, perfilesTable } from "@/lib/airtable";
 import { enviarWhatsApp } from "@/lib/whatsapp";
 
 export async function POST(req: NextRequest) {
@@ -20,6 +20,22 @@ export async function POST(req: NextRequest) {
       fecha_entrega, notas, total, detalle_pedido,
       suscripcion_activa, referido_por,
     });
+
+    // Si el pedido usó un código de referido, acreditar 5% al referidor
+    if (referido_por) {
+      perfilesTable
+        .select({ filterByFormula: `{codigo_referido} = "${referido_por}"`, maxRecords: 1 })
+        .all()
+        .then((records) => {
+          if (records.length > 0) {
+            const actual = Number(records[0].fields.descuento_pendiente ?? 0);
+            perfilesTable.update(records[0].id, {
+              descuento_pendiente: actual + 5,
+            } as unknown as Record<string, string | number | boolean>);
+          }
+        })
+        .catch(() => {});
+    }
 
     // WhatsApp automático: confirmación de pedido (no bloquea respuesta)
     enviarWhatsApp({ nombre: nombre_cliente, telefono, tipo: "pedido_confirmado" }).catch(() => {});

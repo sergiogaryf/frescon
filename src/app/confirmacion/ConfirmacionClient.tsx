@@ -4,6 +4,62 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+function ReferidoShare({ telefono }: { telefono: string }) {
+  const [codigo, setCodigo] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
+
+  useEffect(() => {
+    if (!telefono) return;
+    fetch(`/api/referidos?telefono=${encodeURIComponent(telefono)}`)
+      .then(r => r.json())
+      .then(d => { if (d.codigo) setCodigo(d.codigo); });
+  }, [telefono]);
+
+  if (!codigo) return null;
+
+  const mensaje = `¡Hola! Pide frutas y verduras frescas con Frescón 🌿 Usa mi código ${codigo} y ambos obtenemos 5% de descuento en tu primer pedido. Pide en frescon.cl`;
+
+  function copiar() {
+    navigator.clipboard.writeText(codigo!);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
+
+  function compartir() {
+    if (navigator.share) {
+      navigator.share({ text: mensaje });
+    } else {
+      navigator.clipboard.writeText(mensaje);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    }
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-[#F9C514]/20 to-[#F9C514]/5 rounded-3xl p-6 border border-[#F9C514]/30 mb-4">
+      <p className="font-pacifico text-[#1A1A1A] text-base mb-1">¡Comparte y gana!</p>
+      <p className="font-nunito text-[#666] text-sm mb-4">
+        Invita a un amigo con tu código y <strong className="text-[#1A1A1A]">ambos obtienen 5% de descuento</strong> en el próximo pedido.
+      </p>
+      <div className="bg-white rounded-2xl px-4 py-3 flex items-center justify-between mb-3 border border-[#e5e5e5]">
+        <span className="font-nunito font-black text-[#1A1A1A] text-lg tracking-wider">{codigo}</span>
+        <button
+          onClick={copiar}
+          className="text-xs font-nunito font-black text-[#3AAA35] hover:text-[#2A7A26] transition-colors"
+        >
+          {copiado ? "¡Copiado!" : "Copiar"}
+        </button>
+      </div>
+      <button
+        onClick={compartir}
+        className="w-full bg-[#F9C514] hover:bg-[#E0B010] text-[#1A1A1A] font-nunito font-black text-sm py-3 rounded-2xl transition-colors"
+      >
+        📤 Compartir código con amigos
+      </button>
+    </div>
+  );
+}
+
 interface PedidoConfirmado {
   nombre:    string;
   telefono:  string;
@@ -120,6 +176,9 @@ export default function ConfirmacionClient() {
             </div>
           </div>
         </div>
+
+        {/* Compartir referido */}
+        <ReferidoShare telefono={pedido.telefono} />
 
         {/* Botón WhatsApp */}
         <button
