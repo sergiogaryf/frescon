@@ -14,7 +14,7 @@ const categorias = [
   { key: "frutas",   label: "Frutas",   icon: "🍋" },
   { key: "hierbas",  label: "Hierbas",  icon: "🌿" },
   { key: "huevos",   label: "Huevos",   icon: "🥚" },
-  { key: "kits",     label: "Kits",     icon: "📦" },
+  { key: "kits",     label: "Cajas",    icon: "📦" },
 ];
 
 export default function CatalogoCompleto({ productos }: { productos: Product[] }) {
@@ -99,7 +99,7 @@ export default function CatalogoCompleto({ productos }: { productos: Product[] }
             <button
               key={cat.key}
               onClick={() => cambiarFiltro(cat.key)}
-              className={`flex items-center gap-1.5 px-5 py-2.5 rounded-full font-nunito font-black text-sm transition-all ${
+              className={`relative flex items-center gap-1.5 px-5 py-2.5 rounded-full font-nunito font-black text-sm transition-all ${
                 filtro === cat.key
                   ? "bg-[#3AAA35] text-white shadow-md"
                   : "bg-white text-[#1A1A1A] hover:bg-[#3AAA35]/10 shadow-sm"
@@ -107,6 +107,11 @@ export default function CatalogoCompleto({ productos }: { productos: Product[] }
             >
               <span>{cat.icon}</span>
               {cat.label}
+              {cat.key === "kits" && (
+                <span className="absolute -top-2 -right-1 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[9px] px-1.5 py-0.5 rounded-full leading-tight">
+                  Próx.
+                </span>
+              )}
             </button>
           ))}
         </div>
