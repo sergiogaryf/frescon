@@ -5,9 +5,10 @@ const base = new Airtable({
   apiKey: process.env.AIRTABLE_API_KEY,
 }).base(process.env.AIRTABLE_BASE_ID!);
 
-export const productsTable  = base("Productos");
-export const ordersTable    = base("Pedidos");
-export const memoriaTable   = base("CeliaMemoria");
+export const productsTable   = base("Productos");
+export const ordersTable     = base("Pedidos");
+export const memoriaTable    = base("CeliaMemoria");
+export const perfilesTable   = base("PerfilesCeliaClientes");
 
 /* ── Productos ── */
 
@@ -34,13 +35,15 @@ export async function getProductos(): Promise<Product[]> {
 /* ── Pedidos ── */
 
 export interface OrderPayload {
-  nombre_cliente: string;
-  telefono:       string;
-  direccion:      string;
-  fecha_entrega:  string;
-  notas?:         string;
-  total:          number;
-  detalle_pedido: string;
+  nombre_cliente:    string;
+  telefono:          string;
+  direccion:         string;
+  fecha_entrega:     string;
+  notas?:            string;
+  total:             number;
+  detalle_pedido:    string;
+  suscripcion_activa?: boolean;
+  referido_por?:     string;
 }
 
 export interface PedidoAdmin {
@@ -59,15 +62,18 @@ export interface PedidoAdmin {
 
 export async function crearPedido(data: OrderPayload) {
   const record = await ordersTable.create({
-    nombre_cliente: data.nombre_cliente,
-    telefono:       data.telefono,
-    direccion:      data.direccion,
-    fecha_entrega:  data.fecha_entrega,
-    notas:          data.notas ?? "",
-    estado:         "Pendiente",
-    total:          data.total,
-    detalle_pedido: data.detalle_pedido,
-    fecha_pedido:   new Date().toISOString(),
+    nombre_cliente:    data.nombre_cliente,
+    telefono:          data.telefono,
+    direccion:         data.direccion,
+    fecha_entrega:     data.fecha_entrega,
+    notas:             data.referido_por
+                         ? `${data.notas ?? ""}\nreferido:${data.referido_por}`.trim()
+                         : data.notas ?? "",
+    estado:            "Pendiente",
+    total:             data.total,
+    detalle_pedido:    data.detalle_pedido,
+    fecha_pedido:      new Date().toISOString(),
+    suscripcion_activa: data.suscripcion_activa ?? false,
   });
   return record.id;
 }
@@ -195,6 +201,112 @@ export async function getMemoriaReciente(contexto: string, limite = 20): Promise
   } catch {
     return [];
   }
+}
+
+/* ── Perfiles de Clientes ── */
+
+export interface PerfilCliente {
+  id:                   string;
+  telefono:             string;
+  nombre_detectado:     string;
+  perfil:               string;
+  intereses:            string;
+  dieta:                string;
+  signo_zodiacal:       string;
+  productos_favoritos:  string;
+  total_conversaciones: number;
+  primer_contacto:      string;
+  ultimo_contacto:      string;
+  encuesta_satisfaccion: number;
+  notas:                string;
+}
+
+export async function getPerfilCliente(telefono: string): Promise<PerfilCliente | null> {
+  try {
+    const limpio = telefono.replace(/\D/g, "").slice(-9);
+    const records = await perfilesTable
+      .select({ filterByFormula: `SEARCH("${limpio}", {telefono})`, maxRecords: 1 })
+      .all();
+    if (!records.length) return null;
+    const r = records[0];
+    return {
+      id:                   r.id,
+      telefono:             String(r.fields.telefono             ?? ""),
+      nombre_detectado:     String(r.fields.nombre_detectado     ?? ""),
+      perfil:               String(r.fields.perfil               ?? ""),
+      intereses:            String(r.fields.intereses            ?? ""),
+      dieta:                String(r.fields.dieta                ?? ""),
+      signo_zodiacal:       String(r.fields.signo_zodiacal       ?? ""),
+      productos_favoritos:  String(r.fields.productos_favoritos  ?? ""),
+      total_conversaciones: Number(r.fields.total_conversaciones ?? 0),
+      primer_contacto:      String(r.fields.primer_contacto      ?? ""),
+      ultimo_contacto:      String(r.fields.ultimo_contacto      ?? ""),
+      encuesta_satisfaccion: Number(r.fields.encuesta_satisfaccion ?? 0),
+      notas:                String(r.fields.notas                ?? ""),
+    };
+  } catch { return null; }
+}
+
+export async function upsertPerfilCliente(
+  telefono: string,
+  data: Partial<Omit<PerfilCliente, "id" | "telefono" | "primer_contacto">>
+): Promise<void> {
+  try {
+    const limpio = telefono.replace(/\D/g, "").slice(-9);
+    const records = await perfilesTable
+      .select({ filterByFormula: `SEARCH("${limpio}", {telefono})`, maxRecords: 1 })
+      .all();
+    const ahora = new Date().toISOString();
+    if (records.length) {
+      const existing = records[0];
+      const totalConv = Number(existing.fields.total_conversaciones ?? 0) + 1;
+      await perfilesTable.update(existing.id, {
+        ...(data.perfil             ? { perfil:             data.perfil }             : {}),
+        ...(data.intereses          ? { intereses:          data.intereses }          : {}),
+        ...(data.dieta              ? { dieta:              data.dieta }              : {}),
+        ...(data.signo_zodiacal     ? { signo_zodiacal:     data.signo_zodiacal }     : {}),
+        ...(data.nombre_detectado   ? { nombre_detectado:   data.nombre_detectado }   : {}),
+        ...(data.productos_favoritos ? { productos_favoritos: data.productos_favoritos } : {}),
+        ultimo_contacto:      ahora,
+        total_conversaciones: totalConv,
+      } as unknown as Record<string, string | number | boolean>);
+    } else {
+      await perfilesTable.create({
+        telefono:             limpio,
+        ultimo_contacto:      ahora,
+        primer_contacto:      ahora,
+        total_conversaciones: 1,
+        ...(data.perfil           ? { perfil:           data.perfil }           : {}),
+        ...(data.intereses        ? { intereses:        data.intereses }        : {}),
+        ...(data.dieta            ? { dieta:            data.dieta }            : {}),
+        ...(data.signo_zodiacal   ? { signo_zodiacal:   data.signo_zodiacal }   : {}),
+        ...(data.nombre_detectado ? { nombre_detectado: data.nombre_detectado } : {}),
+      } as unknown as Record<string, string | number | boolean>);
+    }
+  } catch (e) { console.error("Error upsert perfil cliente:", e); }
+}
+
+export async function getSuscripciones(): Promise<PedidoAdmin[]> {
+  const records = await ordersTable
+    .select({
+      filterByFormula: `{suscripcion_activa} = TRUE()`,
+      sort: [{ field: "fecha_pedido", direction: "desc" }],
+    })
+    .all();
+
+  return records.map((r) => ({
+    id:             r.id,
+    nombre_cliente: String(r.fields.nombre_cliente ?? ""),
+    telefono:       String(r.fields.telefono       ?? ""),
+    direccion:      String(r.fields.direccion      ?? ""),
+    fecha_entrega:  String(r.fields.fecha_entrega  ?? ""),
+    fecha_pedido:   String(r.fields.fecha_pedido   ?? ""),
+    total:          Number(r.fields.total          ?? 0),
+    estado:         String(r.fields.estado         ?? "Pendiente"),
+    notas:          String(r.fields.notas          ?? ""),
+    detalle_pedido: String(r.fields.detalle_pedido ?? ""),
+    orden_entrega:  Number(r.fields.orden_entrega  ?? 0),
+  }));
 }
 
 export async function getMemoriaStats(): Promise<{

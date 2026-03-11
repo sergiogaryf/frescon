@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { Product } from "@/types";
 import ProductCard from "@/components/products/ProductCard";
 import Navbar from "@/components/layout/Navbar";
@@ -58,6 +59,15 @@ export default function CatalogoCompleto({ productos }: { productos: Product[] }
 
       {/* Contenido principal */}
       <div className="max-w-7xl mx-auto px-9 md:px-[4.5rem] py-10">
+
+        {/* Banner Cajas Frescón */}
+        <Link href="/cajas" className="block bg-gradient-to-r from-[#3AAA35] to-[#2A7A26] rounded-2xl p-4 mb-6 flex items-center justify-between hover:opacity-90 transition-opacity">
+          <div>
+            <p className="font-nunito font-black text-white text-sm">🎁 Cajas Frescón</p>
+            <p className="font-nunito text-white/80 text-xs mt-0.5">Selecciones curadas con ahorro de hasta 18%</p>
+          </div>
+          <span className="text-white text-xl">→</span>
+        </Link>
 
         {/* Buscador + contador */}
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-8">

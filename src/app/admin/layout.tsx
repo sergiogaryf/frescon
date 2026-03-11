@@ -5,12 +5,14 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
 const NAV = [
-  { href: "/admin/pedidos",    label: "Pedidos",    icon: "📦" },
-  { href: "/admin/compras",    label: "Compras",    icon: "🛒" },
+  { href: "/admin/pedidos",        label: "Pedidos",        icon: "📦" },
+  { href: "/admin/suscripciones",  label: "Suscripciones",  icon: "🔁" },
+  { href: "/admin/compras",        label: "Compras",        icon: "🛒" },
   { href: "/admin/inventario", label: "Inventario", icon: "📊" },
   { href: "/admin/equipo",     label: "Equipo",     icon: "👥" },
   { href: "/admin/reportes",   label: "Reportes",   icon: "📈" },
   { href: "/admin/ia",         label: "IA",         icon: "🤖" },
+  { href: "/admin/ia/sesiones", label: "Sesiones",   icon: "💬" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { PedidoAdmin } from "@/lib/airtable";
@@ -97,10 +97,18 @@ export default function CuentaPage() {
             </div>
           ) : (
             <>
-              <p className="font-nunito font-black text-[#1A1A1A] mb-3">
-                {nombre && `Hola, ${nombre.split(" ")[0]}! `}
-                {pedidos.length} pedido{pedidos.length !== 1 ? "s" : ""} encontrado{pedidos.length !== 1 ? "s" : ""}
-              </p>
+              <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                <p className="font-nunito font-black text-[#1A1A1A]">
+                  {nombre && `Hola, ${nombre.split(" ")[0]}! `}
+                  {pedidos.length} pedido{pedidos.length !== 1 ? "s" : ""} encontrado{pedidos.length !== 1 ? "s" : ""}
+                </p>
+                <Link
+                  href="/seguimiento"
+                  className="bg-[#3AAA35]/10 text-[#2A7A26] font-nunito font-black text-xs px-4 py-2 rounded-full hover:bg-[#3AAA35]/20 transition-colors flex-shrink-0"
+                >
+                  🚗 Ver estado en tiempo real
+                </Link>
+              </div>
               <div className="flex flex-col gap-3">
                 {pedidos.map((p) => (
                   <div key={p.id} className="bg-white rounded-3xl shadow-sm p-5">
@@ -128,6 +136,9 @@ export default function CuentaPage() {
                   </div>
                 ))}
               </div>
+              {/* Código de referido */}
+              <ReferidosSection telefono={telefono} nombre={nombre} />
+
               <div className="mt-6 text-center">
                 <Link href="/catalogo" className="bg-[#3AAA35] hover:bg-[#2A7A26] text-white font-nunito font-black px-8 py-3 rounded-full text-sm inline-block transition-colors">
                   + Hacer nuevo pedido
@@ -137,6 +148,67 @@ export default function CuentaPage() {
           )
         )}
       </div>
+    </div>
+  );
+}
+
+function ReferidosSection({ telefono, nombre }: { telefono: string; nombre: string }) {
+  const [data, setData] = useState<{ codigo: string; total_referidos: number } | null>(null);
+  const [copiado, setCopiado] = useState(false);
+
+  useEffect(() => {
+    if (!telefono) return;
+    fetch(`/api/referidos?telefono=${encodeURIComponent(telefono)}`)
+      .then(r => r.json())
+      .then(d => setData(d));
+  }, [telefono]);
+
+  if (!data) return null;
+
+  const mensaje = `¡Hola! Compra frutas y verduras frescas del Valle de Aconcagua con Frescón 🌿 Usa mi código ${data.codigo} y ambos obtenemos 5% de descuento. Pide en frescon.cl`;
+
+  // nombre se recibe pero no se usa aquí directamente (el mensaje ya incluye el código)
+  void nombre;
+
+  function copiar() {
+    navigator.clipboard.writeText(data!.codigo);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
+
+  function compartir() {
+    if (navigator.share) {
+      navigator.share({ text: mensaje });
+    } else {
+      navigator.clipboard.writeText(mensaje);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    }
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-[#3AAA35]/10 to-[#2A7A26]/5 rounded-3xl p-6 border border-[#3AAA35]/20 mt-6">
+      <h3 className="font-nunito font-black text-[#1A1A1A] text-lg mb-1">🎁 Invita a tus amigos</h3>
+      <p className="font-nunito text-[#666] text-sm mb-4">
+        Comparte tu código y ambos obtienen <strong className="text-[#3AAA35]">5% de descuento</strong> en el próximo pedido.
+      </p>
+      <div className="bg-white rounded-2xl px-4 py-3 flex items-center justify-between mb-3 border border-[#e5e5e5]">
+        <span className="font-nunito font-black text-[#1A1A1A] text-lg tracking-wider">{data.codigo}</span>
+        <button onClick={copiar} className="text-xs font-nunito font-black text-[#3AAA35] hover:text-[#2A7A26] transition-colors">
+          {copiado ? "¡Copiado!" : "Copiar"}
+        </button>
+      </div>
+      {data.total_referidos > 0 && (
+        <p className="font-nunito text-xs text-[#999] mb-3">
+          Ya referiste a <strong>{data.total_referidos}</strong> persona{data.total_referidos > 1 ? "s" : ""} 🎉
+        </p>
+      )}
+      <button
+        onClick={compartir}
+        className="w-full bg-[#3AAA35] hover:bg-[#2A7A26] text-white font-nunito font-black text-sm py-3 rounded-2xl transition-colors"
+      >
+        📤 Compartir con amigos
+      </button>
     </div>
   );
 }

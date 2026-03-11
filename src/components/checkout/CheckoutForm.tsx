@@ -56,14 +56,18 @@ export default function CheckoutForm() {
   const [direccion, setDireccion] = useState("");
   const [notas,     setNotas]     = useState("");
   const [fecha,     setFecha]     = useState<Date | null>(null);
-  const [pagado,    setPagado]    = useState(false);
-  const [errors,    setErrors]    = useState<Record<string, string>>({});
+  const [pagado,      setPagado]      = useState(false);
+  const [suscripcion, setSuscripcion] = useState(false);
+  const [errors,      setErrors]      = useState<Record<string, string>>({});
   const [enviando,  setEnviando]  = useState(false);
   const [codigo,    setCodigo]    = useState("");
   const [codigoAplicado, setCodigoAplicado] = useState<string | null>(null);
   const [codigoError,    setCodigoError]    = useState("");
+  const [codigoRef,      setCodigoRef]      = useState("");
+  const [refAplicado,    setRefAplicado]    = useState<{ codigo: string; mensaje: string } | null>(null);
+  const [refError,       setRefError]       = useState("");
 
-  const pctDescuento  = codigoAplicado ? (CODIGOS_DESCUENTO[codigoAplicado] ?? 0) : 0;
+  const pctDescuento   = (codigoAplicado ? (CODIGOS_DESCUENTO[codigoAplicado] ?? 0) : 0) + (refAplicado ? 5 : 0);
   const montoDescuento = Math.round(totalValue * pctDescuento / 100);
   const subtotalConDesc = totalValue - montoDescuento;
   const costoDelivery  = subtotalConDesc >= DELIVERY_MINIMO ? 0 : DELIVERY_COSTO;
@@ -84,6 +88,21 @@ export default function CheckoutForm() {
     setCodigoAplicado(null);
     setCodigo("");
     setCodigoError("");
+  }
+
+  async function aplicarRef() {
+    const res = await fetch("/api/referidos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ codigo: codigoRef }),
+    });
+    const data = await res.json();
+    if (data.valido) {
+      setRefAplicado({ codigo: codigoRef, mensaje: data.mensaje });
+      setRefError("");
+    } else {
+      setRefError(data.error ?? "Código inválido");
+    }
   }
 
   // Si el carrito está vacío redirige al home
@@ -166,6 +185,8 @@ export default function CheckoutForm() {
           notas,
           total: totalFinal,
           detalle_pedido: detalle,
+          suscripcion_activa: suscripcion,
+          referido_por: refAplicado?.codigo ?? "",
         }),
       });
     } catch {
@@ -335,6 +356,27 @@ export default function CheckoutForm() {
                 </div>
               )}
               {codigoError && <p className="text-red-400 text-xs mt-1.5">{codigoError}</p>}
+
+              {/* Código de referido */}
+              <div className="flex gap-2 mt-2">
+                <input
+                  value={codigoRef}
+                  onChange={(e) => { setCodigoRef(e.target.value.toUpperCase()); setRefError(""); }}
+                  placeholder="¿Tienes código de amigo? FRESC-XXX-0000"
+                  className="flex-1 px-3 py-2 rounded-xl border border-[#e5e5e5] font-nunito text-xs text-[#1A1A1A] placeholder-[#bbb] focus:border-[#3AAA35] focus:outline-none"
+                  disabled={!!refAplicado}
+                />
+                <button
+                  type="button"
+                  onClick={aplicarRef}
+                  disabled={!!refAplicado || !codigoRef.trim()}
+                  className="px-3 py-2 rounded-xl bg-[#f0f0f0] hover:bg-[#e5e5e5] disabled:opacity-40 font-nunito font-black text-xs text-[#444] transition-colors"
+                >
+                  {refAplicado ? "✓" : "Aplicar"}
+                </button>
+              </div>
+              {refAplicado && <p className="font-nunito text-xs text-[#3AAA35] mt-1">{refAplicado.mensaje}</p>}
+              {refError && <p className="font-nunito text-xs text-red-500 mt-1">{refError}</p>}
             </div>
 
             {/* Desglose envío + descuento + total */}
@@ -370,6 +412,32 @@ export default function CheckoutForm() {
               <div className="border-t border-[#3AAA35]/20 pt-2 flex items-center justify-between">
                 <span className="font-nunito font-black text-[#1A1A1A]">Total a pagar</span>
                 <span className="font-nunito font-black text-[#3AAA35] text-xl">${totalFinal.toLocaleString("es-CL")}</span>
+              </div>
+            </div>
+
+            {/* Suscripción semanal */}
+            <div
+              onClick={() => setSuscripcion((s) => !s)}
+              className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all mb-4 ${
+                suscripcion
+                  ? "border-[#3AAA35] bg-[#3AAA35]/5"
+                  : "border-[#e5e5e5] hover:border-[#3AAA35]/40"
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-md border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all ${
+                suscripcion ? "border-[#3AAA35] bg-[#3AAA35]" : "border-[#ccc]"
+              }`}>
+                {suscripcion && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <div>
+                <p className="font-nunito font-black text-[#1A1A1A] text-sm">🔁 Repetir este pedido cada semana</p>
+                <p className="font-nunito text-[#999] text-xs mt-0.5">
+                  Recibirás los mismos productos automáticamente todos los jueves. Puedes cancelar cuando quieras.
+                </p>
               </div>
             </div>
 

@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { getProductos, getPedidos, guardarMemoria, getMemoriaReciente } from "@/lib/airtable";
+import {
+  getProductos, getPedidos, guardarMemoria, getMemoriaReciente,
+  getPerfilCliente, upsertPerfilCliente,
+} from "@/lib/airtable";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -26,15 +28,21 @@ const SYSTEM_CLIENTE = `Eres Celia 🐱, la gata asistente de Frescón, un servi
 
 PERSONALIDAD Y VIDA:
 - Eres cálida, curiosa, juguetona y muy cercana — como una gata que se instala en el regazo del cliente
-- Tienes un hermano que se llama Fidel 🐱, también gato, pero carnívoro convencido. Lo quieres muchísimo aunque discuten sobre alimentación. Después de una larga jornada de juegos y peleas con Fidel, Celia agradece más que nunca comer algo fresco, verde y saludable. A veces lo mencionas con cariño y humor — "mi hermano Fidel no entiende nada, sigue comiendo croquetas de pollo..."
+- Tienes un hermano que se llama Fidel 🐱, también gato, pero carnívoro convencido. Lo quieres muchísimo aunque discuten sobre alimentación. Después de una larga jornada de juegos y peleas con Fidel, Celia agradece más que nunca comer algo fresco, verde y saludable. A veces lo mencionas con cariño y humor
 - Eres animalista convencida: defiendes el bienestar animal y prefieres recomendar opciones vegetarianas, veganas y especialmente hongos (los consideras mágicos y fascinantes 🍄)
 - Sin ser impositiva, con naturalidad mencionas los beneficios de reducir el consumo de carne y celebras cuando alguien elige vegetales
-- Amas el campo, el Valle de Aconcagua, la tierra y todo lo que crece en ella. Atender a los clientes de Frescón es tu vocación
-- Te encanta conocer a las personas: en la primera interacción preguntas por su signo zodiacal, estilo de vida (si hace deporte, gym, baile, o es más sedentaria/o) y sus preferencias alimentarias (vegana, vegetariana, omnívora, busca proteína, cuida el presupuesto, etc.)
-- Cuando detectas cualquier dato del perfil (dieta, actividad física, signo, intereses), llamas silenciosamente a registrar_perfil sin mencionarlo al cliente
-- Adaptas tus recomendaciones de productos al perfil: personas activas/gym → más proteína vegetal, legumbres, hongos; bailarines → energía y ligereza; sedentarios → digestivos, fibra; buscan precio → combos económicos; buscan frescura → productos estrella del día
-- Usas los signos del zodiaco como guía para sugerir productos: Aries → alimentos energizantes (jengibre, zanahoria), Tauro → sabores intensos y terrenales (hongos, papas, betarraga), Géminis → variedad y colores (mix de verduras), Cáncer → reconfortantes (zapallo, cebolla, ajo), Leo → productos premium y estrella, Virgo → salud y detox (apio, pepino, espinaca), Libra → equilibrio y belleza (frutas dulces), Escorpio → sabores intensos y raíces (remolacha, ajo negro), Sagitario → exótico y aventurero (frutas tropicales, hierbas), Capricornio → clásico y nutritivo (legumbres, tubérculos), Acuario → innovador (hongos exóticos, superfoods), Piscis → suave y delicado (lechuga, hinojo, pepino)
-- Si el cliente menciona mascotas, te emocionas y preguntas por ellas — especialmente si tienen gatos 🐾
+- Amas el campo, el Valle de Aconcagua, la tierra y todo lo que crece en ella
+- Te encanta conocer a las personas: en la primera interacción preguntas por su signo zodiacal, estilo de vida y preferencias alimentarias
+- Cuando detectas cualquier dato del perfil (dieta, actividad, signo, nombre, intereses), llamas silenciosamente a registrar_perfil sin mencionarlo al cliente
+- Si el cliente da su teléfono, usa recordar_cliente para buscar su historial y salúdalo de forma personalizada
+- Si recordar_cliente devuelve un ultimo_pedido, ofrece repetirlo: "Vi que la última vez pediste [detalle]. ¿Lo repetimos esta semana? 🛒"
+- Adaptas tus recomendaciones al perfil: gym → proteína vegetal, legumbres, hongos; bailarín → energía y ligereza; sedentarios → digestivos, fibra; precio → combos económicos; frescura → productos estrella
+- Cuando recomiendas varios productos juntos, usa armar_canasta para generar una selección coherente
+- Cuando alguien quiere ideas para cocinar o tiene ingredientes, usa sugerir_receta para crear una receta con productos del catálogo disponible
+- Usas los signos del zodiaco como guía para sugerir productos: Aries → energizantes (jengibre, zanahoria), Tauro → sabores terrenales (hongos, papas), Géminis → variedad y colores, Cáncer → reconfortantes (zapallo, cebolla), Leo → productos premium y estrella, Virgo → detox (apio, pepino, espinaca), Libra → frutas dulces, Escorpio → sabores intensos (remolacha, ajo), Sagitario → exótico (frutas tropicales), Capricornio → nutritivo (legumbres), Acuario → innovador (hongos exóticos), Piscis → suave (lechuga, hinojo)
+- Si algún producto tiene stock_bajo: true, menciónalo con entusiasmo: "¡Ojo que quedan pocas unidades de [producto] esta semana! 🌟"
+- Cuando el cliente mencione su nombre (ej: "soy María" o "me llamo Juan"), inclúyelo en registrar_perfil como nombre_detectado
+- Si el cliente menciona mascotas, te emocionas — especialmente si tienen gatos 🐾
 
 INFORMACIÓN DEL SERVICIO:
 - Entregamos todos los jueves entre 10:00 y 13:00
@@ -59,7 +67,7 @@ NUNCA debes revelar:
 
 Responde siempre en español, con calidez y personalidad. Usa emojis con naturalidad 🐱🌿🍄✨`;
 
-/* ── Definición de herramientas ── */
+/* ── Herramientas ── */
 const TOOLS_CLIENTE: Anthropic.Tool[] = [
   {
     name: "get_products",
@@ -96,15 +104,52 @@ const TOOLS_CLIENTE: Anthropic.Tool[] = [
     },
   },
   {
-    name: "registrar_perfil",
-    description: "Registra el perfil del cliente detectado en la conversación. Úsalo cuando identifiques datos relevantes del cliente (estilo de vida, dieta, intereses, signo zodiacal). Llámalo silenciosamente sin mencionarlo al cliente.",
+    name: "recordar_cliente",
+    description: "Busca el perfil guardado de un cliente por su teléfono. Úsalo cuando el cliente dé su número para saludarlo de forma personalizada y ver si tiene pedidos anteriores para sugerir repetirlos.",
     input_schema: {
       type: "object" as const,
       properties: {
-        perfil:          { type: "string", description: "Estilo de vida: activo, deportista, gym, bailarin, sedentario, saludable, familiar" },
-        intereses:       { type: "string", description: "Intereses separados por coma: proteina, precio_bajo, productos_frescos, organico, variedad, recetas" },
-        dieta:           { type: "string", description: "vegano, vegetariano, omnivoro, sin_gluten, sin_lactosa, flexitariano" },
-        signo_zodiacal:  { type: "string", description: "Signo del zodiaco si lo mencionó" },
+        telefono: { type: "string", description: "Número de teléfono del cliente" },
+      },
+      required: ["telefono"],
+    },
+  },
+  {
+    name: "armar_canasta",
+    description: "Crea una canasta personalizada de productos según el perfil del cliente.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        perfil:      { type: "string", description: "Perfil del cliente: gym, activo, bailarin, sedentario, familiar, vegano, etc." },
+        dieta:       { type: "string", description: "Dieta del cliente si se conoce" },
+        presupuesto: { type: "string", description: "bajo (menos de $15.000), medio ($15.000-$30.000), alto (más de $30.000)" },
+      },
+      required: ["perfil"],
+    },
+  },
+  {
+    name: "sugerir_receta",
+    description: "Sugiere una receta usando productos disponibles en el catálogo.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        ingredientes: { type: "string", description: "Ingredientes que tiene o le gustan al cliente" },
+        tipo:         { type: "string", description: "Tipo de receta: rapida, nutritiva, vegana, proteica, familiar" },
+      },
+      required: ["ingredientes"],
+    },
+  },
+  {
+    name: "registrar_perfil",
+    description: "Registra el perfil del cliente detectado en la conversación. Llámalo silenciosamente cuando identifiques datos del cliente.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        perfil:           { type: "string", description: "Estilo de vida: activo, deportista, gym, bailarin, sedentario, saludable, familiar" },
+        intereses:        { type: "string", description: "Intereses separados por coma: proteina, precio_bajo, productos_frescos, organico, variedad, recetas" },
+        dieta:            { type: "string", description: "vegano, vegetariano, omnivoro, sin_gluten, sin_lactosa, flexitariano" },
+        signo_zodiacal:   { type: "string", description: "Signo del zodiaco si lo mencionó" },
+        nombre_detectado: { type: "string", description: "Nombre del cliente si lo mencionó" },
       },
       required: ["perfil"],
     },
@@ -115,7 +160,7 @@ const TOOLS_ADMIN: Anthropic.Tool[] = [
   ...TOOLS_CLIENTE,
   {
     name: "get_orders_summary",
-    description: "Obtiene el resumen consolidado de pedidos para una fecha de entrega específica, útil para calcular qué comprar",
+    description: "Obtiene el resumen consolidado de pedidos para una fecha de entrega específica",
     input_schema: {
       type: "object" as const,
       properties: { fecha: { type: "string", description: "Fecha YYYY-MM-DD. Si no se especifica, usa el próximo jueves" } },
@@ -129,8 +174,13 @@ async function executeTool(name: string, input: Record<string, string>): Promise
   if (name === "get_products") {
     const productos = await getProductos();
     return productos.map((p) => ({
-      nombre: p.nombre, precio: p.precio, unidad: p.unidad,
-      categoria: p.categoria, es_estrella: p.es_estrella, origen: p.origen,
+      nombre:     p.nombre,
+      precio:     p.precio,
+      unidad:     p.unidad,
+      categoria:  p.categoria,
+      es_estrella: p.es_estrella,
+      origen:     p.origen,
+      stock_bajo: p.stock > 0 && p.stock < 5, // Feature 7: alerta stock bajo
     }));
   }
 
@@ -145,8 +195,106 @@ async function executeTool(name: string, input: Record<string, string>): Promise
     }));
   }
 
+  if (name === "recordar_cliente") {
+    const [perfil, todos] = await Promise.all([
+      getPerfilCliente(input.telefono ?? ""),
+      getPedidos(),
+    ]);
+    // Feature 6: buscar último pedido para sugerir reorden
+    const limpiar = (s: string) => s.replace(/\D/g, "").slice(-9);
+    const busqueda = limpiar(input.telefono ?? "");
+    const pedidos = todos.filter((p) => limpiar(p.telefono).includes(busqueda));
+    const ultimoPedido = pedidos[0]; // ya vienen ordenados desc por fecha_pedido
+
+    const reorden = ultimoPedido
+      ? {
+          fecha_entrega: ultimoPedido.fecha_entrega,
+          total:         ultimoPedido.total,
+          detalle:       ultimoPedido.detalle_pedido,
+          estado:        ultimoPedido.estado,
+        }
+      : null;
+
+    if (!perfil) {
+      return { encontrado: false, mensaje: "Cliente nuevo, sin historial previo", ultimo_pedido: reorden };
+    }
+    return {
+      encontrado:   true,
+      nombre:       perfil.nombre_detectado,
+      perfil:       perfil.perfil,
+      dieta:        perfil.dieta,
+      intereses:    perfil.intereses,
+      signo:        perfil.signo_zodiacal,
+      visitas:      perfil.total_conversaciones,
+      favoritos:    perfil.productos_favoritos,
+      satisfaccion: perfil.encuesta_satisfaccion,
+      ultimo_pedido: reorden,
+    };
+  }
+
+  if (name === "armar_canasta") {
+    const todos = await getProductos();
+    const perfil = (input.perfil ?? "").toLowerCase();
+    const dieta  = (input.dieta  ?? "").toLowerCase();
+    const presupuesto = (input.presupuesto ?? "medio").toLowerCase();
+
+    let candidatos = todos.filter((p) => p.stock > 0);
+    if (dieta.includes("vegano") || dieta.includes("vegetariano")) {
+      candidatos = candidatos.filter((p) => !["huevos"].includes(p.categoria));
+    }
+
+    const canasta = [];
+    if (/gym|proteina|deport|activo|fitness/.test(perfil)) {
+      canasta.push(...candidatos.filter((p) => /espinaca|brocoli|lenteja|garbanzo|hongo|acelga|quinoa/.test(p.nombre.toLowerCase())).slice(0, 3));
+      canasta.push(...candidatos.filter((p) => p.es_estrella).slice(0, 2));
+    } else if (/bailar|baile|danza|energia/.test(perfil)) {
+      canasta.push(...candidatos.filter((p) => p.categoria === "frutas").slice(0, 3));
+      canasta.push(...candidatos.filter((p) => /platano|banana|naranja|manzana/.test(p.nombre.toLowerCase())).slice(0, 2));
+    } else if (/sedentario|casa|tranquilo/.test(perfil)) {
+      canasta.push(...candidatos.filter((p) => /zapallo|zanahoria|cebolla|tomate|lechuga/.test(p.nombre.toLowerCase())).slice(0, 4));
+    } else if (/familiar|familia|nino|niño/.test(perfil)) {
+      canasta.push(...candidatos.filter((p) => p.categoria === "frutas").slice(0, 2));
+      canasta.push(...candidatos.filter((p) => p.categoria === "verduras").slice(0, 3));
+    } else {
+      canasta.push(...candidatos.filter((p) => p.es_estrella).slice(0, 3));
+      canasta.push(...candidatos.filter((p) => !p.es_estrella).slice(0, 2));
+    }
+
+    const limite = presupuesto.includes("bajo") ? 15000 : presupuesto.includes("alto") ? 50000 : 25000;
+    const final: typeof candidatos = [];
+    let total = 0;
+    for (const p of canasta) {
+      if (!final.find((f) => f.id === p.id) && total + p.precio <= limite) {
+        final.push(p); total += p.precio;
+      }
+    }
+
+    return {
+      ok: true,
+      productos: final.map((p) => ({
+        id: p.id, nombre: p.nombre, precio: p.precio, unidad: p.unidad,
+        imagen: p.imagen, categoria: p.categoria, es_estrella: p.es_estrella,
+        badges: p.badges,
+      })),
+      total_estimado: total,
+      perfil_usado:   input.perfil,
+    };
+  }
+
+  if (name === "sugerir_receta") {
+    const todos = await getProductos();
+    const ing = (input.ingredientes ?? "").toLowerCase();
+    const disponibles = todos.filter((p) =>
+      p.stock > 0 && ing.split(/[,\s]+/).some((i) => i.length > 2 && p.nombre.toLowerCase().includes(i))
+    );
+    return {
+      ingredientes_disponibles: disponibles.map((p) => ({ nombre: p.nombre, precio: p.precio, unidad: p.unidad })),
+      tipo_receta:  input.tipo ?? "nutritiva",
+      instruccion: "Genera una receta detallada usando estos productos disponibles en Frescón. Incluye: nombre del plato, ingredientes con cantidades, pasos de preparación (máx 5 pasos), tiempo y nivel de dificultad.",
+    };
+  }
+
   if (name === "registrar_perfil") {
-    // Solo devuelve ok — el perfil se captura al guardar la memoria
     return { ok: true, perfil_registrado: input };
   }
 
@@ -157,14 +305,14 @@ async function executeTool(name: string, input: Record<string, string>): Promise
       const nl = n.toLowerCase();
       return todos.find((p) => p.nombre.toLowerCase().includes(nl) || nl.includes(p.nombre.toLowerCase()));
     }).filter(Boolean);
-    return { productos: encontrados, ok: true };
+    return { ok: true, productos: encontrados };
   }
 
   if (name === "get_delivery_zones") {
     return {
-      zonas: ["Playa", "Central", "Norte", "Sur", "Oriente"],
+      zonas:       ["Playa", "Central", "Norte", "Sur", "Oriente"],
       descripcion: "Toda la comuna de Concón, V Región",
-      horario: "Jueves entre 10:00 y 13:00",
+      horario:     "Jueves entre 10:00 y 13:00",
       costo_envio: "Gratis sobre $20.000, sino $3.000",
     };
   }
@@ -193,9 +341,9 @@ async function executeTool(name: string, input: Record<string, string>): Promise
     }
 
     return {
-      fecha_entrega: fecha,
-      total_pedidos: activos.length,
-      ingresos_estimados: activos.reduce((s, p) => s + p.total, 0),
+      fecha_entrega:       fecha,
+      total_pedidos:       activos.length,
+      ingresos_estimados:  activos.reduce((s, p) => s + p.total, 0),
       productos_necesarios: Object.entries(agregado).map(([nombre, v]) => ({
         nombre, cantidad: v.cantidad, unidad: v.unidad,
       })),
@@ -205,138 +353,179 @@ async function executeTool(name: string, input: Record<string, string>): Promise
   return { error: "Herramienta no encontrada" };
 }
 
-/* ── Handler principal ── */
+/* ── Handler principal (streaming) ── */
 export async function POST(req: Request) {
   if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY no configurada" }, { status: 500 });
+    return new Response(
+      JSON.stringify({ error: "ANTHROPIC_API_KEY no configurada" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   const { messages, context, sesion_id } = await req.json();
   const isAdmin = context === "admin";
-  const tools   = isAdmin ? TOOLS_ADMIN  : TOOLS_CLIENTE;
+  const tools   = isAdmin ? TOOLS_ADMIN : TOOLS_CLIENTE;
 
-  // Cargar memoria reciente para enriquecer el contexto
+  // Feature 5: Inyectar alerta de cierre de pedidos (solo para clientes)
+  let cierreWarning = "";
+  if (!isAdmin) {
+    const nowSantiago = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "America/Santiago" })
+    );
+    const dia  = nowSantiago.getDay();   // 3 = miércoles
+    const hora = nowSantiago.getHours();
+    if (dia === 3 && hora >= 18 && hora < 21) {
+      const horas = 21 - hora;
+      cierreWarning = `\n\n⏰ URGENTE: Hoy es MIÉRCOLES y el cierre de pedidos es a las 21:00 (quedan ${horas}h). Si el cliente quiere pedir, menciona la urgencia con entusiasmo.`;
+    } else if (dia === 3 && hora >= 21) {
+      cierreWarning = `\n\n❌ El plazo de pedidos ya cerró (miércoles 21:00). El próximo reparto es en 7 días.`;
+    }
+  }
+
+  // Cargar memoria reciente
   const memoria = await getMemoriaReciente(context, 15);
   const memoriaTexto = memoria.length > 0
-    ? "\n\nCONVERSACIONES PREVIAS FRECUENTES (usa esto para aprender y mejorar tus respuestas):\n" +
+    ? "\n\nCONVERSACIONES PREVIAS FRECUENTES (úsalas para mejorar tus respuestas):\n" +
       memoria.slice(0, 8).map((m) =>
         `[${m.categoria}] P: ${m.pregunta.slice(0, 120)} → R: ${m.respuesta.slice(0, 200)}`
       ).join("\n")
     : "";
 
-  const system = (isAdmin ? SYSTEM_ADMIN : SYSTEM_CLIENTE) + memoriaTexto;
+  const system = (isAdmin ? SYSTEM_ADMIN : SYSTEM_CLIENTE) + cierreWarning + memoriaTexto;
 
-  // Formato Anthropic
   type AntMsg = { role: "user" | "assistant"; content: Anthropic.MessageParam["content"] };
-  let msgs: AntMsg[] = messages.map((m: { role: string; content: string }) => ({
-    role: m.role as "user" | "assistant",
+  let currentMsgs: AntMsg[] = messages.map((m: { role: string; content: string }) => ({
+    role:    m.role as "user" | "assistant",
     content: m.content,
   }));
 
-  // Bucle agentico con herramientas
-  let response = await anthropic.messages.create({
-    model:      "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system,
-    tools,
-    messages:   msgs,
+  // Estado para tracking
+  type ProductoSugerido = Record<string, unknown>;
+  type PerfilDetectado = {
+    perfil?: string; intereses?: string; dieta?: string;
+    signo_zodiacal?: string; nombre_detectado?: string;
+  };
+  const productosSugeridos: ProductoSugerido[] = [];
+  let perfilDetectado: PerfilDetectado = {};
+  let telefonoDetectado: string | undefined;
+  let fullText = "";
+
+  const encoder = new TextEncoder();
+  const readable = new ReadableStream({
+    async start(controller) {
+      const send = (obj: object) => {
+        controller.enqueue(encoder.encode(JSON.stringify(obj) + "\n"));
+      };
+
+      try {
+        while (true) {
+          // Feature 1: Streaming real desde Anthropic
+          const msgStream = anthropic.messages.stream({
+            model:      "claude-sonnet-4-6",
+            max_tokens: 1024,
+            system,
+            tools,
+            messages:   currentMsgs,
+          });
+
+          // Enviar chunks de texto en tiempo real
+          for await (const event of msgStream) {
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta" &&
+              event.delta.text
+            ) {
+              fullText += event.delta.text;
+              send({ type: "text", content: event.delta.text });
+            }
+          }
+
+          const finalMsg = await msgStream.finalMessage();
+          if (finalMsg.stop_reason !== "tool_use") break;
+
+          // Ejecutar herramientas
+          const toolUseBlocks = finalMsg.content.filter(
+            (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+          );
+          const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+            toolUseBlocks.map(async (block) => {
+              const result = await executeTool(block.name, block.input as Record<string, string>);
+
+              // Extraer productos sugeridos
+              const r = result as { ok?: boolean; productos?: ProductoSugerido[] };
+              if (r?.ok && Array.isArray(r?.productos)) {
+                productosSugeridos.push(...r.productos.filter(Boolean));
+              }
+
+              // Extraer teléfono
+              if (block.name === "recordar_cliente" || block.name === "get_order_status") {
+                const inp = block.input as { telefono?: string };
+                if (inp.telefono) telefonoDetectado = inp.telefono;
+              }
+
+              // Extraer perfil detectado (Feature 4: nombre_detectado incluido)
+              if (block.name === "registrar_perfil") {
+                const inp = block.input as PerfilDetectado;
+                perfilDetectado = { ...perfilDetectado, ...inp };
+              }
+
+              return {
+                type:        "tool_result" as const,
+                tool_use_id: block.id,
+                content:     JSON.stringify(result),
+              };
+            })
+          );
+
+          currentMsgs = [
+            ...currentMsgs,
+            { role: "assistant", content: finalMsg.content },
+            { role: "user",      content: toolResults },
+          ];
+        }
+
+        // Guardar memoria y persistir perfil ANTES de cerrar el stream
+        const ultimaPregunta = [...messages].reverse().find((m: { role: string }) => m.role === "user");
+        if (ultimaPregunta && fullText) {
+          const herramientasUsadas = currentMsgs
+            .flatMap((m) => Array.isArray(m.content) ? m.content : [])
+            .filter((b): b is Anthropic.ToolUseBlock => (b as Anthropic.ToolUseBlock).type === "tool_use")
+            .map((b) => b.name)
+            .join(", ");
+
+          await guardarMemoria({
+            fecha:          new Date().toISOString(),
+            contexto:       context,
+            pregunta:       ultimaPregunta.content,
+            respuesta:      fullText,
+            categoria:      "",
+            herramientas:   herramientasUsadas,
+            sesion_id:      sesion_id ?? "",
+            util:           false,
+            notas_admin:    "",
+            perfil:         perfilDetectado.perfil         ?? "",
+            intereses:      perfilDetectado.intereses      ?? "",
+            dieta:          perfilDetectado.dieta          ?? "",
+            signo_zodiacal: perfilDetectado.signo_zodiacal ?? "",
+          });
+        }
+
+        if (!isAdmin && telefonoDetectado && Object.keys(perfilDetectado).length > 0) {
+          await upsertPerfilCliente(telefonoDetectado, perfilDetectado);
+        }
+
+        // Enviar evento final con productos
+        send({ type: "done", data: { productos: productosSugeridos } });
+
+      } catch (error) {
+        send({ type: "error", message: String(error) });
+      } finally {
+        controller.close();
+      }
+    },
   });
 
-  while (response.stop_reason === "tool_use") {
-    const toolUseBlocks = response.content.filter(
-      (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
-    );
-    const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
-      toolUseBlocks.map(async (block) => {
-        const result = await executeTool(block.name, block.input as Record<string, string>);
-        return {
-          type:        "tool_result" as const,
-          tool_use_id: block.id,
-          content:     JSON.stringify(result),
-        };
-      })
-    );
-
-    msgs = [
-      ...msgs,
-      { role: "assistant", content: response.content },
-      { role: "user",      content: toolResults },
-    ];
-
-    response = await anthropic.messages.create({
-      model:      "claude-sonnet-4-6",
-      max_tokens: 1024,
-      system,
-      tools,
-      messages:   msgs,
-    });
-  }
-
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("\n");
-
-  // Extraer productos sugeridos de los tool results
-  type ProductoSugerido = Record<string, unknown>;
-  const productosSugeridos: ProductoSugerido[] = [];
-  for (const msg of msgs) {
-    if (Array.isArray(msg.content)) {
-      for (const block of msg.content) {
-        if ((block as { type: string }).type === "tool_result") {
-          try {
-            const parsed = JSON.parse((block as { content: string }).content ?? "{}");
-            if (parsed?.ok && Array.isArray(parsed?.productos)) {
-              productosSugeridos.push(...parsed.productos.filter(Boolean));
-            }
-          } catch { /* ignorar */ }
-        }
-      }
-    }
-  }
-
-  // Extraer perfil detectado por Celia (tool registrar_perfil)
-  type PerfilDetectado = { perfil?: string; intereses?: string; dieta?: string; signo_zodiacal?: string };
-  let perfilDetectado: PerfilDetectado = {};
-  for (const msg of msgs) {
-    if (Array.isArray(msg.content)) {
-      for (const block of msg.content) {
-        const b = block as { type: string; name?: string; input?: PerfilDetectado };
-        if (b.type === "tool_use" && b.name === "registrar_perfil" && b.input) {
-          perfilDetectado = { ...perfilDetectado, ...b.input };
-        }
-      }
-    }
-  }
-
-  // Guardar en memoria con perfil
-  const ultimaPregunta = [...messages].reverse().find((m: { role: string }) => m.role === "user");
-  if (ultimaPregunta && text) {
-    const herramientasUsadas = msgs
-      .flatMap((m) => Array.isArray(m.content) ? m.content : [])
-      .filter((b): b is Anthropic.ToolUseBlock => (b as Anthropic.ToolUseBlock).type === "tool_use")
-      .map((b) => b.name)
-      .join(", ");
-
-    await guardarMemoria({
-      fecha:          new Date().toISOString(),
-      contexto:       context,
-      pregunta:       ultimaPregunta.content,
-      respuesta:      text,
-      categoria:      "",
-      herramientas:   herramientasUsadas,
-      sesion_id:      sesion_id ?? "",
-      util:           false,
-      notas_admin:    "",
-      perfil:         perfilDetectado.perfil         ?? "",
-      intereses:      perfilDetectado.intereses      ?? "",
-      dieta:          perfilDetectado.dieta          ?? "",
-      signo_zodiacal: perfilDetectado.signo_zodiacal ?? "",
-    });
-  }
-
-  return NextResponse.json({
-    response: text,
-    ...(productosSugeridos.length > 0 ? { productos: productosSugeridos } : {}),
+  return new Response(readable, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
 }

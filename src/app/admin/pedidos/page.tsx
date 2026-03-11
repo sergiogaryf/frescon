@@ -41,6 +41,8 @@ export default function AdminPedidosPage() {
   const [loading,    setLoading]    = useState(true);
   const [expandido,  setExpandido]  = useState<string | null>(null);
   const [actualizando, setActualizando] = useState<string | null>(null);
+  const [notifAbierta, setNotifAbierta] = useState<string | null>(null);
+  const [notifFeedback, setNotifFeedback] = useState<Record<string, string>>({});
 
   const fetchPedidos = useCallback(async () => {
     setLoading(true);
@@ -52,6 +54,36 @@ export default function AdminPedidosPage() {
   }, [filtro]);
 
   useEffect(() => { fetchPedidos(); }, [fetchPedidos]);
+
+  async function notificarCliente(
+    pedido: PedidoAdmin,
+    tipo: "pedido_confirmado" | "en_camino" | "entregado"
+  ) {
+    setNotifAbierta(null);
+    const res = await fetch("/api/admin/notificar-cliente", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telefono: pedido.telefono, nombre: pedido.nombre_cliente, tipo }),
+    });
+    if (res.status === 503) {
+      const data = await res.json();
+      alert(data.error);
+      return;
+    }
+    if (!res.ok) {
+      const data = await res.json();
+      alert("Error al enviar: " + (data.error ?? "Error desconocido"));
+      return;
+    }
+    setNotifFeedback((prev) => ({ ...prev, [pedido.id]: "✓ Enviado" }));
+    setTimeout(() => {
+      setNotifFeedback((prev) => {
+        const next = { ...prev };
+        delete next[pedido.id];
+        return next;
+      });
+    }, 3000);
+  }
 
   async function cambiarEstado(id: string, nuevoEstado: string) {
     setActualizando(id);
@@ -182,26 +214,61 @@ export default function AdminPedidosPage() {
                   </div>
 
                   {/* Botones de estado */}
-                  {TRANSICIONES[p.estado] && TRANSICIONES[p.estado].length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {TRANSICIONES[p.estado].map((nuevoEstado) => (
-                        <button
-                          key={nuevoEstado}
-                          disabled={actualizando === p.id}
-                          onClick={() => cambiarEstado(p.id, nuevoEstado)}
-                          className={`px-4 py-2 rounded-full font-nunito font-black text-sm transition-all disabled:opacity-50 ${
-                            nuevoEstado === "Cancelado"
-                              ? "bg-red-50 text-red-500 border border-red-200 hover:bg-red-100"
-                              : nuevoEstado === "Entregado"
-                              ? "bg-[#3AAA35] text-white hover:bg-[#2A7A26]"
-                              : "bg-[#1A1A1A] text-white hover:bg-[#333]"
-                          }`}
-                        >
-                          {actualizando === p.id ? "Guardando…" : `${ESTADO_EMOJI[nuevoEstado]} Marcar ${nuevoEstado}`}
-                        </button>
-                      ))}
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {TRANSICIONES[p.estado] && TRANSICIONES[p.estado].map((nuevoEstado) => (
+                      <button
+                        key={nuevoEstado}
+                        disabled={actualizando === p.id}
+                        onClick={() => cambiarEstado(p.id, nuevoEstado)}
+                        className={`px-4 py-2 rounded-full font-nunito font-black text-sm transition-all disabled:opacity-50 ${
+                          nuevoEstado === "Cancelado"
+                            ? "bg-red-50 text-red-500 border border-red-200 hover:bg-red-100"
+                            : nuevoEstado === "Entregado"
+                            ? "bg-[#3AAA35] text-white hover:bg-[#2A7A26]"
+                            : "bg-[#1A1A1A] text-white hover:bg-[#333]"
+                        }`}
+                      >
+                        {actualizando === p.id ? "Guardando…" : `${ESTADO_EMOJI[nuevoEstado]} Marcar ${nuevoEstado}`}
+                      </button>
+                    ))}
+
+                    {/* Botón notificación WhatsApp */}
+                    <div className="relative ml-auto">
+                      {notifFeedback[p.id] ? (
+                        <span className="px-4 py-2 rounded-full font-nunito font-black text-sm bg-[#e8f5e9] text-[#2e7d32]">
+                          {notifFeedback[p.id]}
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setNotifAbierta(notifAbierta === p.id ? null : p.id)}
+                            className="px-4 py-2 rounded-full font-nunito font-black text-sm bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition-all"
+                          >
+                            📱 Notificar
+                          </button>
+                          {notifAbierta === p.id && (
+                            <div className="absolute right-0 top-full mt-1 bg-white rounded-2xl shadow-lg border border-[#f0f0f0] py-1 z-10 min-w-[180px]">
+                              {(
+                                [
+                                  { tipo: "pedido_confirmado" as const, label: "Pedido confirmado" },
+                                  { tipo: "en_camino" as const, label: "En camino" },
+                                  { tipo: "entregado" as const, label: "Entregado" },
+                                ] as const
+                              ).map(({ tipo, label }) => (
+                                <button
+                                  key={tipo}
+                                  onClick={() => notificarCliente(p, tipo)}
+                                  className="w-full text-left px-4 py-2 font-nunito text-sm text-[#333] hover:bg-[#f5f5f5] transition-colors"
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
