@@ -43,7 +43,7 @@ function formatShort(d: Date): string {
 
 const DELIVERY_MINIMO = 20000;
 const DELIVERY_COSTO  = 3000;
-const CODIGOS_DESCUENTO: Record<string, number> = { ALPASO: 5 };
+const CODIGOS_DESCUENTO: Record<string, number> = { FRESCON10: 10 };
 
 export default function CheckoutForm() {
   const { items, total, clearCart } = useCartStore();

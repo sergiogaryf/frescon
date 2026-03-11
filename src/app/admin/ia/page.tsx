@@ -80,12 +80,20 @@ export default function AdminIAPage() {
           <h1 className="font-nunito font-black text-[#1A1A1A] text-2xl">🐱 Celia — Asistente IA</h1>
           <p className="text-[#999] font-nunito text-sm mt-0.5">Tu gata asistente, experta en operaciones Frescón</p>
         </div>
-        <Link
-          href="/admin/ia/memoria"
-          className="text-xs font-nunito font-black px-4 py-2 rounded-full border border-[#e5e5e5] text-[#666] hover:border-[#3AAA35]/40 transition-all"
-        >
-          🧠 Ver memoria
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/ia/memoria"
+            className="text-xs font-nunito font-black px-4 py-2 rounded-full border border-[#e5e5e5] text-[#666] hover:border-[#3AAA35]/40 transition-all"
+          >
+            🧠 Ver memoria
+          </Link>
+          <Link
+            href="/admin/ia/insights"
+            className="text-xs font-nunito font-black px-4 py-2 rounded-full bg-[#3AAA35] text-white hover:bg-[#2A7A26] transition-all"
+          >
+            💡 Insights
+          </Link>
+        </div>
       </div>
 
       {/* Acciones rápidas */}
