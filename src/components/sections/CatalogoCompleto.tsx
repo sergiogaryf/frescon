@@ -66,7 +66,7 @@ export default function CatalogoCompleto({ productos }: { productos: Product[] }
         <Link href="/cajas" className="block bg-gradient-to-r from-[#3AAA35] to-[#2A7A26] rounded-2xl p-4 mb-6 flex items-center justify-between hover:opacity-90 transition-opacity">
           <div>
             <p className="font-nunito font-black text-white text-sm">🎁 Cajas Frescón</p>
-            <p className="font-nunito text-white/80 text-xs mt-0.5">Selecciones curadas con ahorro de hasta 18%</p>
+            <p className="font-nunito text-white/80 text-xs mt-0.5">Selecciones creadas con ahorro de hasta 18%</p>
           </div>
           <span className="text-white text-xl">→</span>
         </Link>
