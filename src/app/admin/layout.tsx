@@ -69,7 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* ── Nav móvil ── */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-20">
         {/* Barra superior: logo centrado sobre fondo verde */}
-        <div className="bg-[#2A7A26] flex items-center justify-between px-4 py-1.5">
+        <div className="bg-[#2A7A26] h-11 flex items-center justify-between px-4">
           <div className="w-8" />
           <Image src="/images/Logo.png" alt="Frescon" width={60} height={26} className="object-contain" />
           <button
@@ -112,7 +112,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* ── Contenido ── */}
-      <main className="lg:ml-56 flex-1 min-h-screen pt-[38px] lg:pt-0">
+      <main className="lg:ml-56 flex-1 min-h-screen pt-11 lg:pt-0">
         {children}
       </main>
     </div>

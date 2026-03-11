@@ -117,7 +117,7 @@ export default function AgenteUXPage() {
   return (
     <div className="min-h-screen bg-[#f8faf8]">
       {/* Header */}
-      <div className="bg-white border-b border-[#e5e5e5] px-6 py-4 sticky top-0 z-20">
+      <div className="bg-white border-b border-[#e5e5e5] px-6 py-4 sticky top-11 lg:top-0 z-20">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <div>
             <h1 className="font-nunito font-black text-[#1A1A1A] text-xl">🤖 Agente UX</h1>
