@@ -3,8 +3,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { useCartStore } from "@/store/cartStore";
+import { Product } from "@/types";
 
-interface Msg { role: "user" | "assistant"; content: string }
+interface Msg {
+  role: "user" | "assistant";
+  content: string;
+  productos?: Product[];
+}
 
 const INITIAL: Msg = {
   role: "assistant",
@@ -14,6 +20,9 @@ const INITIAL: Msg = {
 export default function ChatWidget() {
   const pathname = usePathname();
   const isAdmin  = pathname?.startsWith("/admin") || pathname?.startsWith("/repartidor");
+
+  const addItem = useCartStore((s) => s.addItem);
+  const [agregados, setAgregados] = useState<Record<string, boolean>>({});
 
   const [open,     setOpen]     = useState(false);
   const [mensajes, setMensajes] = useState<Msg[]>([INITIAL]);
@@ -68,7 +77,11 @@ export default function ChatWidget() {
         body:    JSON.stringify({ messages: nuevosMensajes, context: "cliente", sesion_id: sesionId.current }),
       });
       const data = await res.json();
-      setMensajes((prev) => [...prev, { role: "assistant", content: data.response ?? data.error ?? "Error al responder." }]);
+      setMensajes((prev) => [...prev, {
+        role: "assistant",
+        content:   data.response ?? data.error ?? "Error al responder.",
+        productos: data.productos ?? [],
+      }]);
     } catch {
       setMensajes((prev) => [...prev, { role: "assistant", content: "Error de conexión. Intenta de nuevo." }]);
     }
@@ -117,12 +130,41 @@ export default function ChatWidget() {
           <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 bg-[#f9fafb]">
             {mensajes.map((m, i) =>
               m.role === "assistant" ? (
-                <div key={i} className="flex gap-2 max-w-[85%]">
+                <div key={i} className="flex gap-2 max-w-[90%]">
                   <div className="w-7 h-7 rounded-full bg-white overflow-hidden flex-shrink-0 mt-0.5 border border-[#e5e5e5]">
                     <Image src="/images/celia.png" alt="Celia" width={28} height={28} className="w-full h-full object-cover" style={{ objectPosition: "center 20%" }} />
                   </div>
-                  <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
-                    <p className="font-nunito text-[#1A1A1A] text-xs leading-relaxed whitespace-pre-wrap">{m.content}</p>
+                  <div className="flex flex-col gap-2 min-w-0">
+                    <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
+                      <p className="font-nunito text-[#1A1A1A] text-xs leading-relaxed whitespace-pre-wrap">{m.content}</p>
+                    </div>
+                    {m.productos && m.productos.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        {m.productos.map((p) => (
+                          <div key={p.id} className="bg-white rounded-2xl shadow-sm px-3 py-2 flex items-center gap-2 border border-[#f0f0f0]">
+                            {p.imagen && (
+                              <img src={p.imagen} alt={p.nombre} className="w-9 h-9 rounded-xl object-cover flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-nunito font-black text-[#1A1A1A] text-xs truncate">{p.nombre}</p>
+                              <p className="font-nunito text-[#3AAA35] text-xs font-black">${p.precio.toLocaleString("es-CL")} / {p.unidad}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                addItem(p);
+                                setAgregados((a) => ({ ...a, [p.id]: true }));
+                                setTimeout(() => setAgregados((a) => ({ ...a, [p.id]: false })), 1500);
+                              }}
+                              className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-black transition-all ${
+                                agregados[p.id] ? "bg-[#2A7A26] scale-90" : "bg-[#3AAA35] hover:bg-[#2A7A26] hover:scale-110"
+                              }`}
+                            >
+                              {agregados[p.id] ? "✓" : "+"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (

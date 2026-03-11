@@ -78,6 +78,21 @@ const TOOLS_CLIENTE: Anthropic.Tool[] = [
     description: "Obtiene información sobre las zonas de Concón donde Frescón hace delivery",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
+  {
+    name: "sugerir_productos",
+    description: "Muestra tarjetas de productos con botón de agregar al carrito dentro del chat. Úsalo SIEMPRE que recomiendes uno o más productos específicos al cliente.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        nombres: {
+          type: "array",
+          items: { type: "string" },
+          description: "Nombres exactos de los productos a mostrar (tal como aparecen en el catálogo)",
+        },
+      },
+      required: ["nombres"],
+    },
+  },
 ];
 
 const TOOLS_ADMIN: Anthropic.Tool[] = [
@@ -112,6 +127,16 @@ async function executeTool(name: string, input: Record<string, string>): Promise
       estado: p.estado, fecha_entrega: p.fecha_entrega,
       total: p.total, detalle: p.detalle_pedido,
     }));
+  }
+
+  if (name === "sugerir_productos") {
+    const nombres: string[] = (input.nombres as unknown as string[]) ?? [];
+    const todos = await getProductos();
+    const encontrados = nombres.map((n) => {
+      const nl = n.toLowerCase();
+      return todos.find((p) => p.nombre.toLowerCase().includes(nl) || nl.includes(p.nombre.toLowerCase()));
+    }).filter(Boolean);
+    return { productos: encontrados, ok: true };
   }
 
   if (name === "get_delivery_zones") {
@@ -231,6 +256,24 @@ export async function POST(req: Request) {
     .map((b) => b.text)
     .join("\n");
 
+  // Extraer productos sugeridos de los tool results
+  type ProductoSugerido = Record<string, unknown>;
+  const productosSugeridos: ProductoSugerido[] = [];
+  for (const msg of msgs) {
+    if (Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if ((block as { type: string }).type === "tool_result") {
+          try {
+            const parsed = JSON.parse((block as { content: string }).content ?? "{}");
+            if (parsed?.ok && Array.isArray(parsed?.productos)) {
+              productosSugeridos.push(...parsed.productos.filter(Boolean));
+            }
+          } catch { /* ignorar */ }
+        }
+      }
+    }
+  }
+
   // Guardar en memoria: solo el último mensaje del usuario y la respuesta
   const ultimaPregunta = [...messages].reverse().find((m: { role: string }) => m.role === "user");
   if (ultimaPregunta && text) {
@@ -253,5 +296,8 @@ export async function POST(req: Request) {
     });
   }
 
-  return NextResponse.json({ response: text });
+  return NextResponse.json({
+    response: text,
+    ...(productosSugeridos.length > 0 ? { productos: productosSugeridos } : {}),
+  });
 }
