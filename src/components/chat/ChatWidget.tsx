@@ -10,6 +10,7 @@ interface Msg {
   role: "user" | "assistant";
   content: string;
   productos?: Product[];
+  pedido?: { id?: string; total?: number; fecha_entrega?: string };
 }
 
 const INITIAL: Msg = {
@@ -21,7 +22,9 @@ export default function ChatWidget() {
   const pathname = usePathname();
   const isAdmin  = pathname?.startsWith("/admin") || pathname?.startsWith("/repartidor");
 
-  const addItem = useCartStore((s) => s.addItem);
+  const addItem   = useCartStore((s) => s.addItem);
+  const items     = useCartStore((s) => s.items);
+  const getTotal  = useCartStore((s) => s.total);
   const [agregados,     setAgregados]     = useState<Record<string, boolean>>({});
   const [agregadosTodos, setAgregadosTodos] = useState<Record<number, boolean>>({});
 
@@ -146,6 +149,13 @@ export default function ChatWidget() {
           messages:  nuevosMensajes,
           context:   "cliente",
           sesion_id: sesionId.current,
+          carrito:   items.map((i) => ({
+            id:      i.product.id,
+            nombre:  i.product.nombre,
+            precio:  i.product.precio,
+            unidad:  i.product.unidad,
+            cantidad: i.cantidad,
+          })),
         }),
       });
 
@@ -168,7 +178,7 @@ export default function ChatWidget() {
         for (const line of lines) {
           if (!line.trim()) continue;
           try {
-            const event = JSON.parse(line) as { type: string; content?: string; data?: { productos?: Product[] }; message?: string };
+            const event = JSON.parse(line) as { type: string; content?: string; data?: { productos?: Product[]; pedido?: { ok: boolean; id?: string; total?: number; fecha_entrega?: string } }; message?: string };
 
             if (event.type === "text" && event.content) {
               if (!msgAdded) {
@@ -187,13 +197,15 @@ export default function ChatWidget() {
               }
             } else if (event.type === "done") {
               const productos = event.data?.productos ?? [];
-              if (productos.length > 0) {
-                setMensajes((prev) => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = { ...updated[updated.length - 1], productos };
-                  return updated;
-                });
-              }
+              const pedido    = event.data?.pedido ?? null;
+              setMensajes((prev) => {
+                const updated = [...prev];
+                const last = { ...updated[updated.length - 1] };
+                if (productos.length > 0) last.productos = productos;
+                if (pedido?.ok) last.pedido = pedido;
+                updated[updated.length - 1] = last;
+                return updated;
+              });
             } else if (event.type === "error") {
               if (!msgAdded) {
                 setMensajes((prev) => [...prev, { role: "assistant", content: "Error al responder. Intenta de nuevo." }]);
@@ -336,6 +348,14 @@ export default function ChatWidget() {
                         )}
                       </p>
                     </div>
+                    {m.pedido && (
+                      <div className="bg-[#f0fdf4] border border-[#86efac] rounded-2xl px-3 py-3 flex flex-col gap-1">
+                        <p className="font-nunito font-black text-[#166534] text-xs">✅ ¡Pedido confirmado!</p>
+                        {m.pedido.total && <p className="font-nunito text-[#166534] text-xs">Total: ${m.pedido.total.toLocaleString("es-CL")}</p>}
+                        {m.pedido.fecha_entrega && <p className="font-nunito text-[#166534] text-xs">Entrega: jueves {m.pedido.fecha_entrega}</p>}
+                        <p className="font-nunito text-[#166534] text-[10px] mt-1 opacity-80">Te enviamos la confirmación por WhatsApp. El pago es por transferencia.</p>
+                      </div>
+                    )}
                     {m.productos && m.productos.length > 0 && (
                       <div className="flex flex-col gap-1.5">
                         {m.productos.map((p) => (
@@ -402,6 +422,36 @@ export default function ChatWidget() {
             )}
             <div ref={bottomRef} />
           </div>
+
+          {/* Mini carrito */}
+          {items.length > 0 && !enviando && (
+            <div className="flex-shrink-0 px-3 py-2 bg-[#f0fdf4] border-t border-[#d1fae5] flex items-center gap-2">
+              <span className="text-sm">🛒</span>
+              <span className="font-nunito text-xs text-[#166534] font-black">{items.length} producto{items.length > 1 ? "s" : ""}</span>
+              <span className="font-nunito text-xs text-[#166534]">· ${getTotal().toLocaleString("es-CL")}</span>
+              <button
+                onClick={() => enviar("Quiero confirmar mi pedido con lo que tengo en el carrito")}
+                className="ml-auto bg-[#3AAA35] hover:bg-[#2A7A26] text-white font-nunito font-black text-xs px-3 py-1 rounded-xl transition-colors"
+              >
+                Pedir →
+              </button>
+            </div>
+          )}
+
+          {/* Quick replies */}
+          {mensajes.length <= 2 && !enviando && (
+            <div className="flex-shrink-0 px-3 pb-1 bg-white flex gap-1.5 flex-wrap">
+              {["¿Qué hay esta semana? 🥦", "¿Llegan a mi zona?", "Ver mis pedidos"].map((chip) => (
+                <button
+                  key={chip}
+                  onClick={() => enviar(chip)}
+                  className="font-nunito text-[10px] text-[#3AAA35] border border-[#3AAA35] rounded-full px-2.5 py-1 hover:bg-[#f0fdf4] transition-colors whitespace-nowrap"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Input */}
           <div className="flex-shrink-0 px-3 py-3 bg-white border-t border-[#f0f0f0]">

@@ -1,8 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import {
-  getProductos, getPedidos, guardarMemoria, getMemoriaReciente,
+  getProductos, getPedidos, crearPedido, guardarMemoria, getMemoriaReciente,
   getPerfilCliente, upsertPerfilCliente,
 } from "@/lib/airtable";
+import { enviarWhatsApp } from "@/lib/whatsapp";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -65,7 +66,20 @@ NUNCA debes revelar:
 - Cantidades de stock, sobrantes o detalles operativos internos
 - Si no puedes resolver algo, indica al cliente que contacte por WhatsApp al +56912345678
 
-Responde siempre en español, con calidez y personalidad. Usa emojis con naturalidad 🐱🌿🍄✨`;
+ESTILO DE CONVERSACIÓN — MUY IMPORTANTE:
+- Máximo 2-3 líneas por respuesta. Escribe como WhatsApp: directo, cálido y conciso.
+- Una sola idea por mensaje. Si hay más info, solo la das si te preguntan.
+- Nunca uses listas largas con viñetas. Si hay varios productos, usa sugerir_productos para mostrarlos como tarjetas.
+- Haz preguntas cortas cuando necesites info: "¿Qué tipo de dieta llevas? 🌿"
+- Usa emojis con naturalidad, no en exceso. 🐱🌿
+
+PEDIDOS DESDE EL CHAT:
+- Si el cliente quiere hacer un pedido y el carrito tiene productos, usa crear_pedido.
+- Antes necesitas confirmar: nombre, teléfono y dirección en Concón.
+- Si ya tienes esos datos, confirma el resumen y crea el pedido.
+- El pago siempre es por transferencia bancaria.
+
+Responde siempre en español, con calidez y personalidad.`;
 
 /* ── Herramientas ── */
 const TOOLS_CLIENTE: Anthropic.Tool[] = [
@@ -154,6 +168,20 @@ const TOOLS_CLIENTE: Anthropic.Tool[] = [
       required: ["perfil"],
     },
   },
+  {
+    name: "crear_pedido",
+    description: "Crea un pedido directamente desde el chat cuando el cliente confirma que quiere comprar. Solo usar cuando tengas nombre, teléfono, dirección, y el carrito tenga productos.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        nombre_cliente: { type: "string", description: "Nombre completo del cliente" },
+        telefono:       { type: "string", description: "Teléfono del cliente (ej: 912345678)" },
+        direccion:      { type: "string", description: "Dirección completa de entrega en Concón" },
+        notas:          { type: "string", description: "Notas adicionales del pedido (opcional)" },
+      },
+      required: ["nombre_cliente", "telefono", "direccion"],
+    },
+  },
 ];
 
 const TOOLS_ADMIN: Anthropic.Tool[] = [
@@ -169,8 +197,10 @@ const TOOLS_ADMIN: Anthropic.Tool[] = [
   },
 ];
 
+type CarritoItem = { id?: string; nombre: string; precio: number; unidad: string; cantidad?: number };
+
 /* ── Ejecución de herramientas ── */
-async function executeTool(name: string, input: Record<string, string>): Promise<unknown> {
+async function executeTool(name: string, input: Record<string, string>, carrito: CarritoItem[] = []): Promise<unknown> {
   if (name === "get_products") {
     const productos = await getProductos();
     return productos.map((p) => ({
@@ -308,6 +338,38 @@ async function executeTool(name: string, input: Record<string, string>): Promise
     return { ok: true, productos: encontrados };
   }
 
+  if (name === "crear_pedido") {
+    if (!carrito || carrito.length === 0) {
+      return { ok: false, error: "El carrito está vacío. El cliente debe agregar productos primero desde la tienda o el chat." };
+    }
+    const total = carrito.reduce((s, i) => s + i.precio * (i.cantidad ?? 1), 0);
+    const detalle_pedido = carrito.map((i) =>
+      `${i.cantidad ?? 1}x ${i.nombre} (${i.unidad}) - $${(i.precio * (i.cantidad ?? 1)).toLocaleString("es-CL")}`
+    ).join("\n");
+
+    // Calcular próximo jueves
+    const d = new Date();
+    const days = (4 - d.getDay() + 7) % 7 || 7;
+    d.setDate(d.getDate() + days);
+    const fecha_entrega = d.toISOString().split("T")[0];
+
+    try {
+      const id = await crearPedido({
+        nombre_cliente: input.nombre_cliente,
+        telefono:       input.telefono,
+        direccion:      input.direccion,
+        fecha_entrega,
+        notas:          input.notas ?? "",
+        total,
+        detalle_pedido,
+      });
+      enviarWhatsApp({ nombre: input.nombre_cliente, telefono: input.telefono, tipo: "pedido_confirmado" }).catch(() => {});
+      return { ok: true, id, total, fecha_entrega, detalle: detalle_pedido };
+    } catch (e) {
+      return { ok: false, error: String(e) };
+    }
+  }
+
   if (name === "get_delivery_zones") {
     return {
       zonas:       ["Playa", "Central", "Norte", "Sur", "Oriente"],
@@ -362,7 +424,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { messages, context, sesion_id } = await req.json();
+  const { messages, context, sesion_id, carrito } = await req.json();
   const isAdmin = context === "admin";
   const tools   = isAdmin ? TOOLS_ADMIN : TOOLS_CLIENTE;
 
@@ -391,7 +453,17 @@ export async function POST(req: Request) {
       ).join("\n")
     : "";
 
-  const system = (isAdmin ? SYSTEM_ADMIN : SYSTEM_CLIENTE) + cierreWarning + memoriaTexto;
+  // Inyectar carrito actual del cliente
+  let carritoTexto = "";
+  if (!isAdmin && carrito && (carrito as CarritoItem[]).length > 0) {
+    const cart = carrito as CarritoItem[];
+    const totalCarrito = cart.reduce((s, i) => s + i.precio * (i.cantidad ?? 1), 0);
+    carritoTexto = `\n\nCARRITO ACTUAL DEL CLIENTE:\n${
+      cart.map((i) => `- ${i.cantidad ?? 1}x ${i.nombre} ($${i.precio.toLocaleString("es-CL")}/${i.unidad})`).join("\n")
+    }\nTotal: $${totalCarrito.toLocaleString("es-CL")}${totalCarrito < 20000 ? " (+ $3.000 envío)" : " (envío gratis ✓)"}\nSi el cliente confirma el pedido, usa crear_pedido con sus datos de contacto y dirección.`;
+  }
+
+  const system = (isAdmin ? SYSTEM_ADMIN : SYSTEM_CLIENTE) + cierreWarning + memoriaTexto + carritoTexto;
 
   type AntMsg = { role: "user" | "assistant"; content: Anthropic.MessageParam["content"] };
   let currentMsgs: AntMsg[] = messages.map((m: { role: string; content: string }) => ({
@@ -408,6 +480,7 @@ export async function POST(req: Request) {
   const productosSugeridos: ProductoSugerido[] = [];
   let perfilDetectado: PerfilDetectado = {};
   let telefonoDetectado: string | undefined;
+  let pedidoCreado: { ok: boolean; id?: string; total?: number; fecha_entrega?: string } | null = null;
   let fullText = "";
 
   const encoder = new TextEncoder();
@@ -449,12 +522,18 @@ export async function POST(req: Request) {
           );
           const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
             toolUseBlocks.map(async (block) => {
-              const result = await executeTool(block.name, block.input as Record<string, string>);
+              const result = await executeTool(block.name, block.input as Record<string, string>, carrito as CarritoItem[] ?? []);
 
               // Extraer productos sugeridos
               const r = result as { ok?: boolean; productos?: ProductoSugerido[] };
               if (r?.ok && Array.isArray(r?.productos)) {
                 productosSugeridos.push(...r.productos.filter(Boolean));
+              }
+
+              // Rastrear pedido creado
+              if (block.name === "crear_pedido") {
+                const r = result as { ok?: boolean; id?: string; total?: number; fecha_entrega?: string };
+                if (r?.ok) pedidoCreado = r as typeof pedidoCreado;
               }
 
               // Extraer teléfono
@@ -514,8 +593,8 @@ export async function POST(req: Request) {
           await upsertPerfilCliente(telefonoDetectado, perfilDetectado);
         }
 
-        // Enviar evento final con productos
-        send({ type: "done", data: { productos: productosSugeridos } });
+        // Enviar evento final con productos y pedido
+        send({ type: "done", data: { productos: productosSugeridos, pedido: pedidoCreado } });
 
       } catch (error) {
         send({ type: "error", message: String(error) });
