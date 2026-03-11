@@ -240,7 +240,7 @@ export async function POST(req: Request) {
       .map((b) => b.name)
       .join(", ");
 
-    guardarMemoria({
+    await guardarMemoria({
       fecha:        new Date().toISOString(),
       contexto:     context,
       pregunta:     ultimaPregunta.content,
