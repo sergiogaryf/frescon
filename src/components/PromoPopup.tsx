@@ -7,14 +7,14 @@ import { Product } from "@/types";
 
 const PALTA_HASS: Product = {
   id:          "palta-hass-promo",
-  nombre:      "Palta Hass",
-  precio:      1490,
+  nombre:      "Palta Chilena",
+  precio:      5100,
   categoria:   "frutas",
-  unidad:      "unidad",
+  unidad:      "kg",
   es_estrella: true,
   stock:       10,
   origen:      "Quillota",
-  descripcion: "Palta Hass cremosa y madura, la mejor de la zona.",
+  descripcion: "Palta chilena cremosa y madura, la mejor de la zona.",
   imagen:      "/images/productos/PaltaHass.png",
   badges:      [],
 };
@@ -81,7 +81,7 @@ export default function PromoPopup() {
               onClick={comprar}
               className="w-full bg-[#F9C514] hover:bg-[#E0B010] text-[#1A1A1A] font-nunito font-black text-lg py-4 rounded-full transition-colors shadow-lg"
             >
-              🛒 Agregar al carrito — $1.490
+              🛒 Agregar al carrito — $5.100/kg
             </button>
           </div>
         </div>
