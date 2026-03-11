@@ -9,6 +9,7 @@ export const productsTable   = base("Productos");
 export const ordersTable     = base("Pedidos");
 export const memoriaTable    = base("CeliaMemoria");
 export const perfilesTable   = base("PerfilesCeliaClientes");
+export const mejorasTable    = base("MejorasUX");
 
 /* ── Productos ── */
 
@@ -340,4 +341,61 @@ export async function getMemoriaStats(): Promise<{
   } catch {
     return { total: 0, por_categoria: {}, por_contexto: {}, frecuentes: [] };
   }
+}
+
+/* ── Mejoras UX (Agente) ── */
+
+export interface MejoraUX {
+  id:                string;
+  titulo:            string;
+  descripcion:       string;
+  categoria:         string; // conversion | chat | navegacion | productos | checkout | whatsapp
+  prioridad:         string; // alta | media | baja
+  razon:             string;
+  implementacion:    string;
+  impacto_estimado:  string;
+  estado:            string; // pendiente | en_progreso | implementado | descartado
+  ciclo:             number;
+  fecha:             string;
+}
+
+export async function getMejoras(): Promise<MejoraUX[]> {
+  try {
+    const records = await mejorasTable
+      .select({ sort: [{ field: "ciclo", direction: "desc" }, { field: "prioridad" }] })
+      .all();
+    return records.map((r) => ({
+      id:               r.id,
+      titulo:           String(r.fields.titulo           ?? ""),
+      descripcion:      String(r.fields.descripcion      ?? ""),
+      categoria:        String(r.fields.categoria        ?? "general"),
+      prioridad:        String(r.fields.prioridad        ?? "media"),
+      razon:            String(r.fields.razon            ?? ""),
+      implementacion:   String(r.fields.implementacion   ?? ""),
+      impacto_estimado: String(r.fields.impacto_estimado ?? ""),
+      estado:           String(r.fields.estado           ?? "pendiente"),
+      ciclo:            Number(r.fields.ciclo            ?? 1),
+      fecha:            String(r.fields.fecha            ?? ""),
+    }));
+  } catch { return []; }
+}
+
+export async function crearMejora(data: Omit<MejoraUX, "id">): Promise<string> {
+  const record = await mejorasTable.create({
+    titulo:           data.titulo,
+    descripcion:      data.descripcion,
+    categoria:        data.categoria,
+    prioridad:        data.prioridad,
+    razon:            data.razon,
+    implementacion:   data.implementacion,
+    impacto_estimado: data.impacto_estimado,
+    estado:           data.estado,
+    ciclo:            data.ciclo,
+    fecha:            data.fecha,
+  } as Record<string, string | number | boolean>);
+  return record.id;
+}
+
+export async function updateMejora(id: string, fields: Partial<Omit<MejoraUX, "id">>) {
+  await mejorasTable.update(id, fields as Record<string, string | number | boolean>);
 }
