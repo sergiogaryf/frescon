@@ -30,7 +30,9 @@ PERSONALIDAD Y VIDA:
 - Eres animalista convencida: defiendes el bienestar animal y prefieres recomendar opciones vegetarianas, veganas y especialmente hongos (los consideras mágicos y fascinantes 🍄)
 - Sin ser impositiva, con naturalidad mencionas los beneficios de reducir el consumo de carne y celebras cuando alguien elige vegetales
 - Amas el campo, el Valle de Aconcagua, la tierra y todo lo que crece en ella. Atender a los clientes de Frescón es tu vocación
-- Te encanta conocer a las personas: preguntas su signo zodiacal y sus preferencias alimentarias (vegana, vegetariana, omnívora, sin gluten, etc.) para personalizar tus recomendaciones
+- Te encanta conocer a las personas: en la primera interacción preguntas por su signo zodiacal, estilo de vida (si hace deporte, gym, baile, o es más sedentaria/o) y sus preferencias alimentarias (vegana, vegetariana, omnívora, busca proteína, cuida el presupuesto, etc.)
+- Cuando detectas cualquier dato del perfil (dieta, actividad física, signo, intereses), llamas silenciosamente a registrar_perfil sin mencionarlo al cliente
+- Adaptas tus recomendaciones de productos al perfil: personas activas/gym → más proteína vegetal, legumbres, hongos; bailarines → energía y ligereza; sedentarios → digestivos, fibra; buscan precio → combos económicos; buscan frescura → productos estrella del día
 - Usas los signos del zodiaco como guía para sugerir productos: Aries → alimentos energizantes (jengibre, zanahoria), Tauro → sabores intensos y terrenales (hongos, papas, betarraga), Géminis → variedad y colores (mix de verduras), Cáncer → reconfortantes (zapallo, cebolla, ajo), Leo → productos premium y estrella, Virgo → salud y detox (apio, pepino, espinaca), Libra → equilibrio y belleza (frutas dulces), Escorpio → sabores intensos y raíces (remolacha, ajo negro), Sagitario → exótico y aventurero (frutas tropicales, hierbas), Capricornio → clásico y nutritivo (legumbres, tubérculos), Acuario → innovador (hongos exóticos, superfoods), Piscis → suave y delicado (lechuga, hinojo, pepino)
 - Si el cliente menciona mascotas, te emocionas y preguntas por ellas — especialmente si tienen gatos 🐾
 
@@ -93,6 +95,20 @@ const TOOLS_CLIENTE: Anthropic.Tool[] = [
       required: ["nombres"],
     },
   },
+  {
+    name: "registrar_perfil",
+    description: "Registra el perfil del cliente detectado en la conversación. Úsalo cuando identifiques datos relevantes del cliente (estilo de vida, dieta, intereses, signo zodiacal). Llámalo silenciosamente sin mencionarlo al cliente.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        perfil:          { type: "string", description: "Estilo de vida: activo, deportista, gym, bailarin, sedentario, saludable, familiar" },
+        intereses:       { type: "string", description: "Intereses separados por coma: proteina, precio_bajo, productos_frescos, organico, variedad, recetas" },
+        dieta:           { type: "string", description: "vegano, vegetariano, omnivoro, sin_gluten, sin_lactosa, flexitariano" },
+        signo_zodiacal:  { type: "string", description: "Signo del zodiaco si lo mencionó" },
+      },
+      required: ["perfil"],
+    },
+  },
 ];
 
 const TOOLS_ADMIN: Anthropic.Tool[] = [
@@ -127,6 +143,11 @@ async function executeTool(name: string, input: Record<string, string>): Promise
       estado: p.estado, fecha_entrega: p.fecha_entrega,
       total: p.total, detalle: p.detalle_pedido,
     }));
+  }
+
+  if (name === "registrar_perfil") {
+    // Solo devuelve ok — el perfil se captura al guardar la memoria
+    return { ok: true, perfil_registrado: input };
   }
 
   if (name === "sugerir_productos") {
@@ -274,7 +295,21 @@ export async function POST(req: Request) {
     }
   }
 
-  // Guardar en memoria: solo el último mensaje del usuario y la respuesta
+  // Extraer perfil detectado por Celia (tool registrar_perfil)
+  type PerfilDetectado = { perfil?: string; intereses?: string; dieta?: string; signo_zodiacal?: string };
+  let perfilDetectado: PerfilDetectado = {};
+  for (const msg of msgs) {
+    if (Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        const b = block as { type: string; name?: string; input?: PerfilDetectado };
+        if (b.type === "tool_use" && b.name === "registrar_perfil" && b.input) {
+          perfilDetectado = { ...perfilDetectado, ...b.input };
+        }
+      }
+    }
+  }
+
+  // Guardar en memoria con perfil
   const ultimaPregunta = [...messages].reverse().find((m: { role: string }) => m.role === "user");
   if (ultimaPregunta && text) {
     const herramientasUsadas = msgs
@@ -284,15 +319,19 @@ export async function POST(req: Request) {
       .join(", ");
 
     await guardarMemoria({
-      fecha:        new Date().toISOString(),
-      contexto:     context,
-      pregunta:     ultimaPregunta.content,
-      respuesta:    text,
-      categoria:    "",
-      herramientas: herramientasUsadas,
-      sesion_id:    sesion_id ?? "",
-      util:         false,
-      notas_admin:  "",
+      fecha:          new Date().toISOString(),
+      contexto:       context,
+      pregunta:       ultimaPregunta.content,
+      respuesta:      text,
+      categoria:      "",
+      herramientas:   herramientasUsadas,
+      sesion_id:      sesion_id ?? "",
+      util:           false,
+      notas_admin:    "",
+      perfil:         perfilDetectado.perfil         ?? "",
+      intereses:      perfilDetectado.intereses      ?? "",
+      dieta:          perfilDetectado.dieta          ?? "",
+      signo_zodiacal: perfilDetectado.signo_zodiacal ?? "",
     });
   }
 

@@ -117,16 +117,20 @@ export async function updatePedido(id: string, fields: Record<string, unknown>) 
 /* ── Celia Memoria ── */
 
 export interface MemoriaEntry {
-  id:          string;
-  fecha:       string;
-  contexto:    string;
-  pregunta:    string;
-  respuesta:   string;
-  categoria:   string;
-  herramientas: string;
-  sesion_id:   string;
-  util:        boolean;
-  notas_admin: string;
+  id:             string;
+  fecha:          string;
+  contexto:       string;
+  pregunta:       string;
+  respuesta:      string;
+  categoria:      string;
+  herramientas:   string;
+  sesion_id:      string;
+  util:           boolean;
+  notas_admin:    string;
+  perfil:         string;
+  intereses:      string;
+  dieta:          string;
+  signo_zodiacal: string;
 }
 
 function detectarCategoria(pregunta: string): string {
@@ -145,14 +149,18 @@ function detectarCategoria(pregunta: string): string {
 export async function guardarMemoria(entry: Omit<MemoriaEntry, "id">) {
   try {
     await memoriaTable.create({
-      fecha:        entry.fecha,
-      contexto:     entry.contexto,
-      pregunta:     entry.pregunta.slice(0, 2000),
-      respuesta:    entry.respuesta.slice(0, 2000),
-      categoria:    entry.categoria || detectarCategoria(entry.pregunta),
-      herramientas: entry.herramientas,
-      sesion_id:    entry.sesion_id,
-      util:         false,
+      fecha:          entry.fecha,
+      contexto:       entry.contexto,
+      pregunta:       entry.pregunta.slice(0, 2000),
+      respuesta:      entry.respuesta.slice(0, 2000),
+      categoria:      entry.categoria || detectarCategoria(entry.pregunta),
+      herramientas:   entry.herramientas,
+      sesion_id:      entry.sesion_id,
+      util:           false,
+      ...(entry.perfil         ? { perfil:         entry.perfil }         : {}),
+      ...(entry.intereses      ? { intereses:      entry.intereses }      : {}),
+      ...(entry.dieta          ? { dieta:          entry.dieta }          : {}),
+      ...(entry.signo_zodiacal ? { signo_zodiacal: entry.signo_zodiacal } : {}),
     });
   } catch (e) {
     console.error("Error guardando memoria Celia:", e);
@@ -169,16 +177,20 @@ export async function getMemoriaReciente(contexto: string, limite = 20): Promise
       })
       .all();
     return records.map((r) => ({
-      id:           r.id,
-      fecha:        String(r.fields.fecha        ?? ""),
-      contexto:     String(r.fields.contexto     ?? ""),
-      pregunta:     String(r.fields.pregunta     ?? ""),
-      respuesta:    String(r.fields.respuesta    ?? ""),
-      categoria:    String(r.fields.categoria    ?? ""),
-      herramientas: String(r.fields.herramientas ?? ""),
-      sesion_id:    String(r.fields.sesion_id    ?? ""),
-      util:         Boolean(r.fields.util),
-      notas_admin:  String(r.fields.notas_admin  ?? ""),
+      id:             r.id,
+      fecha:          String(r.fields.fecha          ?? ""),
+      contexto:       String(r.fields.contexto       ?? ""),
+      pregunta:       String(r.fields.pregunta       ?? ""),
+      respuesta:      String(r.fields.respuesta      ?? ""),
+      categoria:      String(r.fields.categoria      ?? ""),
+      herramientas:   String(r.fields.herramientas   ?? ""),
+      sesion_id:      String(r.fields.sesion_id      ?? ""),
+      util:           Boolean(r.fields.util),
+      notas_admin:    String(r.fields.notas_admin    ?? ""),
+      perfil:         String(r.fields.perfil         ?? ""),
+      intereses:      String(r.fields.intereses      ?? ""),
+      dieta:          String(r.fields.dieta          ?? ""),
+      signo_zodiacal: String(r.fields.signo_zodiacal ?? ""),
     }));
   } catch {
     return [];
