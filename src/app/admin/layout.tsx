@@ -34,9 +34,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ── Sidebar desktop ── */}
       <aside className="hidden lg:flex w-56 bg-white border-r border-[#f0f0f0] flex-col fixed h-full z-20">
-        <div className="px-5 py-5 border-b border-[#f0f0f0]">
-          <Image src="/images/Logo.png" alt="Frescon" width={90} height={40} className="object-contain" />
-          <p className="text-[#bbb] text-[10px] font-nunito font-black mt-1 uppercase tracking-widest">Panel Admin</p>
+        <div className="bg-[#2A7A26] flex flex-col items-center justify-center px-5 py-6 border-b border-[#1A5C18]">
+          <Image src="/images/Logo.png" alt="Frescon" width={130} height={58} className="object-contain" />
+          <p className="text-white/60 text-[10px] font-nunito font-black mt-1.5 uppercase tracking-widest">Panel Admin</p>
         </div>
 
         <nav className="flex-1 p-3 flex flex-col gap-1">
