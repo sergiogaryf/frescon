@@ -1,38 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CAJAS, Caja } from "@/lib/cajas";
-import { useCartStore } from "@/store/cartStore";
-import { Product } from "@/types";
-
-function cajaToProduct(caja: Caja): Product {
-  return {
-    id:          caja.id,
-    nombre:      caja.nombre,
-    precio:      caja.precio,
-    categoria:   "kits",
-    unidad:      "unidad",
-    stock:       99,
-    es_estrella: true,
-    origen:      "Valle de Aconcagua",
-    descripcion: caja.descripcion,
-    imagen:      caja.imagen,
-    badges:      [caja.badge],
-  };
-}
 
 function CajaCard({ caja }: { caja: Caja }) {
-  const addItem = useCartStore((s) => s.addItem);
-  const [agregada, setAgregada] = useState(false);
-
-  function handleAgregar() {
-    addItem(cajaToProduct(caja));
-    setAgregada(true);
-    setTimeout(() => setAgregada(false), 2000);
-  }
-
   return (
     <div className={`${caja.color} rounded-3xl p-6 flex flex-col gap-4 border border-white shadow-sm hover:shadow-md transition-shadow`}>
       {/* Emoji + badge */}
