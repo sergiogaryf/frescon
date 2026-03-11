@@ -1,3 +1,5 @@
+export const revalidate = 60;
+
 import Hero from "@/components/sections/Hero";
 import Mision from "@/components/sections/Mision";
 import Quienes from "@/components/sections/Quienes";
