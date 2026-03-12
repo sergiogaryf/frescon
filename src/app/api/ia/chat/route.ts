@@ -56,7 +56,7 @@ PERSONALIDAD Y VIDA:
 
 INFORMACIÓN DEL SERVICIO:
 - Entregamos todos los jueves entre 10:00 y 13:00
-- Solo en Concón (Playa, Central, Norte, Sur, Oriente)
+- Solo en Concón, Reñaca y Jardín del Mar
 - Pedidos hasta el miércoles a las 23:59
 - Pago: transferencia bancaria
 - Envío gratis en compras sobre $20.000, sino $3.000
@@ -381,8 +381,8 @@ async function executeTool(name: string, input: Record<string, string>, carrito:
 
   if (name === "get_delivery_zones") {
     return {
-      zonas:       ["Playa", "Central", "Norte", "Sur", "Oriente"],
-      descripcion: "Toda la comuna de Concón, V Región",
+      zonas:       ["Concón", "Reñaca", "Jardín del Mar"],
+      descripcion: "Concón, Reñaca y Jardín del Mar, V Región",
       horario:     "Jueves entre 10:00 y 13:00",
       costo_envio: "Gratis sobre $20.000, sino $3.000",
     };

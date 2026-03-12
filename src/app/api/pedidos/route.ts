@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!/conc[oó]n/i.test(direccion)) {
+    if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar/i.test(direccion)) {
       return NextResponse.json(
-        { error: "Solo realizamos delivery en Concón, V Región." },
+        { error: "Solo realizamos delivery en Concón, Reñaca y Jardín del Mar." },
         { status: 422 }
       );
     }

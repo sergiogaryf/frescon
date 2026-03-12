@@ -158,7 +158,7 @@ export default function CheckoutForm() {
     if (!nombre.trim())    e.nombre    = "Ingresa tu nombre";
     if (!telefono.trim())  e.telefono  = "Ingresa tu teléfono";
     if (!direccion.trim()) e.direccion = "Ingresa tu dirección";
-    else if (!/conc[oó]n/i.test(direccion)) e.direccion = "Solo hacemos delivery en Concón. Verifica tu dirección.";
+    else if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar/i.test(direccion)) e.direccion = "Solo hacemos delivery en Concón, Reñaca y Jardín del Mar.";
     if (!fecha)            e.fecha     = "Elige un jueves de entrega";
     if (!pagado)           e.pagado    = "Confirma que realizaste la transferencia";
     if (!pedidoAbierto)    e.horario   = "El plazo de pedidos cerró el miércoles a las 23:59. Vuelve el lunes.";
@@ -334,7 +334,7 @@ export default function CheckoutForm() {
                   onChange={(e) => setDireccion(e.target.value)}
                   className={inputClass(!!errors.direccion)}
                 />
-                <p className="text-[#999] text-xs mt-1 font-nunito">📍 Solo entregamos en Concón, V Región</p>
+                <p className="text-[#999] text-xs mt-1 font-nunito">📍 Solo entregamos en Concón, Reñaca y Jardín del Mar</p>
               </Field>
 
               <Field label="Notas adicionales (opcional)">
