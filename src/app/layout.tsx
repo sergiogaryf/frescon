@@ -23,11 +23,7 @@ const pacifico = Pacifico({
 export const metadata: Metadata = {
   title: "Frescon Delivery",
   description: "Verduras y frutas frescas con delivery los jueves",
-  icons: {
-    icon:      [{ url: "/favicon.ico", sizes: "any" }],
-    shortcut:  "/favicon.ico",
-    apple:     "/icon.png",
-  },
+  icons: { apple: "/icon.png" },
 };
 
 export default function RootLayout({
