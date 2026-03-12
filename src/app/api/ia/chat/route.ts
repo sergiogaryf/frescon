@@ -23,6 +23,12 @@ ACCESO COMPLETO — puedes analizar y responder sobre:
 - Productos: catálogo completo, precios, categorías
 - Operación: optimizaciones, comparativas semanales, sugerencias
 
+REPORTE DE COMPRAS:
+- Cuando te pidan "reporte de pedidos", "lista de compras" o "qué comprar", usa get_orders_summary
+- Presenta el resultado como tabla: Producto | Cantidad | Precio unit. | Subtotal
+- Al final muestra: Total pedidos activos + Total ingresos estimados
+- Si el admin lo pide, también lista los clientes con su dirección para la ruta del repartidor
+
 Responde de forma directa, práctica y con datos concretos. Usa emojis con moderación.`;
 
 const SYSTEM_CLIENTE = `Eres Celia 🐱, la gata asistente de Frescón, un servicio de delivery de frutas y verduras frescas del Valle de Aconcagua a domicilio en Concón, Chile.
@@ -390,28 +396,47 @@ async function executeTool(name: string, input: Record<string, string>, carrito:
       d.setDate(d.getDate() + daysToThursday);
       fecha = d.toISOString().split("T")[0];
     }
-    const pedidos = await getPedidos({ fecha });
+    const [pedidos, productos] = await Promise.all([getPedidos({ fecha }), getProductos()]);
     const activos = pedidos.filter((p) => p.estado !== "Cancelado");
 
-    const agregado: Record<string, { cantidad: number; unidad: string }> = {};
+    const agregado: Record<string, { cantidad: number; unidad: string; precio_venta: number; subtotal_venta: number }> = {};
     for (const p of activos) {
       for (const linea of p.detalle_pedido.split("\n")) {
         const m = linea.match(/^(\d+(?:\.\d+)?)x\s(.+?)\s\(([^)]+)\)/);
         if (!m) continue;
-        const nombre = m[2].trim();
+        const nombre   = m[2].trim();
         const cantidad = parseFloat(m[1]);
-        if (!agregado[nombre]) agregado[nombre] = { cantidad: 0, unidad: m[3] };
-        agregado[nombre].cantidad += cantidad;
+        const prod     = productos.find((pr) => pr.nombre.toLowerCase() === nombre.toLowerCase());
+        const precio   = prod?.precio ?? 0;
+        if (!agregado[nombre]) agregado[nombre] = { cantidad: 0, unidad: m[3], precio_venta: precio, subtotal_venta: 0 };
+        agregado[nombre].cantidad       += cantidad;
+        agregado[nombre].subtotal_venta += precio * cantidad;
       }
     }
 
+    const lista = Object.entries(agregado)
+      .sort((a, b) => b[1].subtotal_venta - a[1].subtotal_venta)
+      .map(([nombre, v]) => ({
+        nombre,
+        cantidad:        v.cantidad,
+        unidad:          v.unidad,
+        precio_unitario: v.precio_venta,
+        subtotal:        v.subtotal_venta,
+      }));
+
     return {
-      fecha_entrega:       fecha,
-      total_pedidos:       activos.length,
-      ingresos_estimados:  activos.reduce((s, p) => s + p.total, 0),
-      productos_necesarios: Object.entries(agregado).map(([nombre, v]) => ({
-        nombre, cantidad: v.cantidad, unidad: v.unidad,
+      fecha_entrega:      fecha,
+      total_pedidos:      activos.length,
+      ingresos_estimados: activos.reduce((s, p) => s + p.total, 0),
+      productos_a_comprar: lista,
+      pedidos_detalle:    activos.map((p) => ({
+        nombre:    p.nombre_cliente,
+        telefono:  p.telefono,
+        direccion: p.direccion,
+        total:     p.total,
+        estado:    p.estado,
       })),
+      instruccion: "Presenta este reporte como lista de compras para el mercado de Quillota. Muestra cada producto con su cantidad y subtotal. Al final muestra el total de pedidos e ingresos estimados.",
     };
   }
 

@@ -19,6 +19,8 @@ export interface NotifData {
 
 function buildMensaje(data: NotifData): string {
   const { nombre, tipo, extra } = data;
+  // Si viene mensaje personalizado (ej: notif al repartidor), úsalo directamente
+  if (extra && tipo === "pedido_confirmado" && nombre === "Repartidor") return extra;
   switch (tipo) {
     case "pedido_confirmado":
       return `¡Hola ${nombre}! 🌿 Tu pedido Frescón fue recibido y confirmado. Te esperamos el próximo jueves entre 10:00 y 13:00. Si tienes cambios o dudas, responde este mensaje. ¡Gracias! — Celia 🐱`;
