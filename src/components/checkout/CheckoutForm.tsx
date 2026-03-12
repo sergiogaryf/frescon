@@ -44,24 +44,12 @@ function formatShort(d: Date): string {
 
 const DELIVERY_MINIMO = 20000;
 const DELIVERY_COSTO  = 3000;
-const CODIGOS_DESCUENTO: Record<string, number> = { FRESCON10: 10 };
-
-function isPedidoAbierto(): boolean {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }));
-  const dia  = now.getDay(); // 0=Dom,1=Lun,2=Mar,3=Mié,4=Jue,5=Vie,6=Sáb
-  const hora = now.getHours();
-  const min  = now.getMinutes();
-  // Permitir lunes(1), martes(2) y miércoles(3) hasta las 23:59
-  if (dia === 1 || dia === 2) return true;
-  if (dia === 3 && (hora < 23 || (hora === 23 && min <= 59))) return true;
-  return false;
-}
+const CODIGOS_DESCUENTO: Record<string, number> = { FRESCON10: 10, AMAMOSACELIA: 5 };
 
 export default function CheckoutForm() {
   const { items, total, clearCart } = useCartStore();
   const router      = useRouter();
   const totalValue  = total();
-  const pedidoAbierto = useMemo(() => isPedidoAbierto(), []);
 
   const jueves = useMemo(() => getProximosJueves(4), []);
 
@@ -161,7 +149,6 @@ export default function CheckoutForm() {
     else if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar/i.test(direccion)) e.direccion = "Solo hacemos delivery en Concón, Reñaca y Jardín del Mar.";
     if (!fecha)            e.fecha     = "Elige un jueves de entrega";
     if (!pagado)           e.pagado    = "Confirma que realizaste la transferencia";
-    if (!pedidoAbierto)    e.horario   = "El plazo de pedidos cerró el miércoles a las 23:59. Vuelve el lunes.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -265,19 +252,6 @@ export default function CheckoutForm() {
           Volver al catálogo
         </Link>
       </div>
-
-      {/* Banner pedidos cerrados */}
-      {!pedidoAbierto && (
-        <div className="bg-red-50 border-b border-red-200 px-9 md:px-[4.5rem] py-4">
-          <div className="max-w-5xl mx-auto flex items-center gap-3">
-            <span className="text-2xl">⏰</span>
-            <div>
-              <p className="font-nunito font-black text-red-700 text-sm">Pedidos cerrados hasta el lunes</p>
-              <p className="font-nunito text-red-500 text-xs">El plazo de pedidos es lunes a miércoles hasta las 23:59. Vuelve el lunes para pedir tu cajita del próximo jueves.</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Page title */}
       <div className="bg-white border-b border-[#f0f0f0] px-9 md:px-[4.5rem] py-10">

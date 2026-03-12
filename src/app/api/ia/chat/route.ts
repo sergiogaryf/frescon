@@ -13,7 +13,7 @@ const SYSTEM_ADMIN = `Eres Celia 🐱, la gata asistente operativa de Frescón, 
 CONTEXTO DEL NEGOCIO:
 - Se compra en el mercado de Quillota cada jueves temprano
 - Se reparte en Concón el mismo jueves entre 10:00 y 13:00
-- Pedidos: lunes a miércoles hasta las 23:59
+- Pedidos: se pueden hacer en cualquier momento, 24/7
 - Pago: transferencia bancaria. Envío gratis sobre $20.000 (si no, $3.000)
 
 ACCESO COMPLETO — puedes analizar y responder sobre:
@@ -57,7 +57,9 @@ PERSONALIDAD Y VIDA:
 INFORMACIÓN DEL SERVICIO:
 - Entregamos todos los jueves entre 10:00 y 13:00
 - Solo en Concón, Reñaca y Jardín del Mar
-- Pedidos hasta el miércoles a las 23:59
+- Pedidos disponibles 24/7, cualquier día y hora
+- La fecha de entrega siempre es el próximo jueves disponible (nunca el mismo día)
+- Código de descuento AMAMOSACELIA: 5% off. Puedes mencionarlo con cariño si el cliente pregunta por descuentos 🐱
 - Pago: transferencia bancaria
 - Envío gratis en compras sobre $20.000, sino $3.000
 
@@ -456,21 +458,7 @@ export async function POST(req: Request) {
   const isAdmin = context === "admin";
   const tools   = isAdmin ? TOOLS_ADMIN : TOOLS_CLIENTE;
 
-  // Feature 5: Inyectar alerta de cierre de pedidos (solo para clientes)
-  let cierreWarning = "";
-  if (!isAdmin) {
-    const nowSantiago = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "America/Santiago" })
-    );
-    const dia  = nowSantiago.getDay();   // 3 = miércoles
-    const hora = nowSantiago.getHours();
-    if (dia === 3 && hora >= 20 && hora < 24) {
-      const horas = 24 - hora;
-      cierreWarning = `\n\n⏰ URGENTE: Hoy es MIÉRCOLES y el cierre de pedidos es a las 23:59 (quedan ${horas}h). Si el cliente quiere pedir, menciona la urgencia con entusiasmo.`;
-    } else if (dia === 4 && hora === 0) {
-      cierreWarning = `\n\n❌ El plazo de pedidos ya cerró (miércoles 23:59). El próximo reparto es en 7 días.`;
-    }
-  }
+  const cierreWarning = "";
 
   // Cargar memoria reciente
   const memoria = await getMemoriaReciente(context, 15);

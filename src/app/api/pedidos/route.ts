@@ -2,16 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { crearPedido, perfilesTable } from "@/lib/airtable";
 import { enviarWhatsApp } from "@/lib/whatsapp";
 
-function isPedidoAbierto(): boolean {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }));
-  const dia  = now.getDay();
-  const hora = now.getHours();
-  const min  = now.getMinutes();
-  if (dia === 1 || dia === 2) return true;
-  if (dia === 3 && (hora < 23 || (hora === 23 && min <= 59))) return true;
-  return false;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -23,13 +13,6 @@ export async function POST(req: NextRequest) {
 
     if (!nombre_cliente || !telefono || !direccion || !fecha_entrega || !total) {
       return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 });
-    }
-
-    if (!isPedidoAbierto()) {
-      return NextResponse.json(
-        { error: "El plazo de pedidos está cerrado. Los pedidos se reciben de lunes a miércoles hasta las 23:59." },
-        { status: 403 }
-      );
     }
 
     if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar/i.test(direccion)) {
