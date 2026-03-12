@@ -29,7 +29,7 @@ function buildMensaje(data: NotifData): string {
     case "cancelado":
       return `Hola ${nombre}, tu pedido Frescón fue cancelado. Si tienes preguntas, contáctanos por WhatsApp. Lamentamos los inconvenientes. — Frescón 🌿`;
     case "cierre_pedidos":
-      return `¡Hola ${nombre}! ⏰ Recuerda que el plazo de pedidos Frescón cierra HOY MIÉRCOLES a las 21:00. ¡Pide tu cajita en frescon.cl antes que sea tarde! 🌿 — Celia 🐱`;
+      return `¡Hola ${nombre}! ⏰ Recuerda que el plazo de pedidos Frescón cierra HOY MIÉRCOLES a las 23:59. ¡Pide tu cajita en frescon.cl antes que sea tarde! 🌿 — Celia 🐱`;
     default:
       return extra ?? "Mensaje de Frescón";
   }

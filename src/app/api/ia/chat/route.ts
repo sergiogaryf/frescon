@@ -13,7 +13,7 @@ const SYSTEM_ADMIN = `Eres Celia 🐱, la gata asistente operativa de Frescón, 
 CONTEXTO DEL NEGOCIO:
 - Se compra en el mercado de Quillota cada jueves temprano
 - Se reparte en Concón el mismo jueves entre 10:00 y 13:00
-- Pedidos: lunes a miércoles hasta las 21:00
+- Pedidos: lunes a miércoles hasta las 23:59
 - Pago: transferencia bancaria. Envío gratis sobre $20.000 (si no, $3.000)
 
 ACCESO COMPLETO — puedes analizar y responder sobre:
@@ -51,7 +51,7 @@ PERSONALIDAD Y VIDA:
 INFORMACIÓN DEL SERVICIO:
 - Entregamos todos los jueves entre 10:00 y 13:00
 - Solo en Concón (Playa, Central, Norte, Sur, Oriente)
-- Pedidos hasta el miércoles a las 21:00
+- Pedidos hasta el miércoles a las 23:59
 - Pago: transferencia bancaria
 - Envío gratis en compras sobre $20.000, sino $3.000
 
@@ -439,11 +439,11 @@ export async function POST(req: Request) {
     );
     const dia  = nowSantiago.getDay();   // 3 = miércoles
     const hora = nowSantiago.getHours();
-    if (dia === 3 && hora >= 18 && hora < 21) {
-      const horas = 21 - hora;
-      cierreWarning = `\n\n⏰ URGENTE: Hoy es MIÉRCOLES y el cierre de pedidos es a las 21:00 (quedan ${horas}h). Si el cliente quiere pedir, menciona la urgencia con entusiasmo.`;
-    } else if (dia === 3 && hora >= 21) {
-      cierreWarning = `\n\n❌ El plazo de pedidos ya cerró (miércoles 21:00). El próximo reparto es en 7 días.`;
+    if (dia === 3 && hora >= 20 && hora < 24) {
+      const horas = 24 - hora;
+      cierreWarning = `\n\n⏰ URGENTE: Hoy es MIÉRCOLES y el cierre de pedidos es a las 23:59 (quedan ${horas}h). Si el cliente quiere pedir, menciona la urgencia con entusiasmo.`;
+    } else if (dia === 4 && hora === 0) {
+      cierreWarning = `\n\n❌ El plazo de pedidos ya cerró (miércoles 23:59). El próximo reparto es en 7 días.`;
     }
   }
 
