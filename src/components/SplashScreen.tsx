@@ -7,21 +7,12 @@ export default function SplashScreen() {
   const [phase, setPhase] = useState<"iris-close" | "logo" | "iris-open" | "done">("iris-close");
 
   useEffect(() => {
-    // Solo una vez por sesión
-    if (sessionStorage.getItem("splash_shown")) {
-      setPhase("done");
-      return;
-    }
-
     // Fase 1: iris se cierra (700ms)
     const t1 = setTimeout(() => setPhase("logo"), 700);
-    // Fase 2: logo visible (800ms pausa)
-    const t2 = setTimeout(() => setPhase("iris-open"), 1500);
+    // Fase 2: logo visible (1600ms pausa → total 3s)
+    const t2 = setTimeout(() => setPhase("iris-open"), 2300);
     // Fase 3: iris se abre (700ms) → done
-    const t3 = setTimeout(() => {
-      setPhase("done");
-      sessionStorage.setItem("splash_shown", "1");
-    }, 2200);
+    const t3 = setTimeout(() => setPhase("done"), 3000);
 
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
@@ -53,7 +44,6 @@ export default function SplashScreen() {
             : "none",
       }}
     >
-      {/* Logo */}
       {(phase === "logo" || phase === "iris-open") && (
         <div
           style={{

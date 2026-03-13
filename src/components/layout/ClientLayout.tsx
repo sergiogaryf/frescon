@@ -12,7 +12,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <>
-      {pathname === "/catalogo" && <SplashScreen />}
+      {!isAdmin && <SplashScreen key={pathname} />}
       {children}
       {!isAdmin && <CartSidebar />}
       {!isAdmin && <PromoPopup />}
