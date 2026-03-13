@@ -66,7 +66,7 @@ export interface PedidoAdmin {
 export async function crearPedido(data: OrderPayload) {
   const record = await ordersTable.create({
     nombre_cliente:    data.nombre_cliente,
-    ...(data.email ? { email: data.email } : {}),
+    ...(data.email ? { cliente_email: data.email } : {}),
     telefono:          data.telefono,
     direccion:         data.direccion,
     fecha_entrega:     data.fecha_entrega,
@@ -108,7 +108,7 @@ export async function getPedidos(options: {
   return records.map((r) => ({
     id:             r.id,
     nombre_cliente: String(r.fields.nombre_cliente ?? ""),
-    email:          String(r.fields.email          ?? ""),
+    email:          String(r.fields.cliente_email  ?? ""),
     telefono:       String(r.fields.telefono       ?? ""),
     direccion:      String(r.fields.direccion      ?? ""),
     fecha_entrega:  String(r.fields.fecha_entrega  ?? ""),
@@ -302,7 +302,7 @@ export async function getSuscripciones(): Promise<PedidoAdmin[]> {
   return records.map((r) => ({
     id:             r.id,
     nombre_cliente: String(r.fields.nombre_cliente ?? ""),
-    email:          String(r.fields.email          ?? ""),
+    email:          String(r.fields.cliente_email  ?? ""),
     telefono:       String(r.fields.telefono       ?? ""),
     direccion:      String(r.fields.direccion      ?? ""),
     fecha_entrega:  String(r.fields.fecha_entrega  ?? ""),
