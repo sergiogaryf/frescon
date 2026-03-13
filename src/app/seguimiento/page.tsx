@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -23,19 +24,33 @@ const ESTADO_INFO: Record<string, { emoji: string; texto: string; color: string 
   "Cancelado":  { emoji: "❌", texto: "Pedido cancelado", color: "text-red-500" },
 };
 
-export default function SeguimientoPage() {
+function SeguimientoContent() {
+  const searchParams = useSearchParams();
   const [telefono, setTelefono] = useState("");
   const [pedidos, setPedidos]   = useState<PedidoTracking[] | null>(null);
   const [cargando, setCargando] = useState(false);
 
-  async function buscar(e: React.FormEvent) {
-    e.preventDefault();
-    if (!telefono.trim()) return;
+  async function fetchPedidos(tel: string) {
     setCargando(true);
-    const res  = await fetch(`/api/cuenta?telefono=${encodeURIComponent(telefono)}`);
+    const res  = await fetch(`/api/cuenta?telefono=${encodeURIComponent(tel)}`);
     const data = await res.json();
     setPedidos(Array.isArray(data) ? data : []);
     setCargando(false);
+  }
+
+  useEffect(() => {
+    const tel = searchParams.get("tel");
+    if (tel) {
+      setTelefono(tel);
+      fetchPedidos(tel);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function buscar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!telefono.trim()) return;
+    fetchPedidos(telefono);
   }
 
   // Auto-refresh cada 30s si hay pedido "En camino"
@@ -152,5 +167,13 @@ export default function SeguimientoPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SeguimientoPage() {
+  return (
+    <Suspense>
+      <SeguimientoContent />
+    </Suspense>
   );
 }

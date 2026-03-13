@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     // Email al cliente: confirmación de pedido
     if (email) {
       emailPedidoConfirmado({
-        nombre: nombre_cliente, email, direccion,
+        nombre: nombre_cliente, email, telefono, direccion,
         fecha_entrega, detalle: detalle_pedido, total: Number(total),
       }).catch(() => {});
     }
