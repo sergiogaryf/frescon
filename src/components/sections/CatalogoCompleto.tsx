@@ -9,13 +9,15 @@ import Navbar from "@/components/layout/Navbar";
 import { CAJAS } from "@/lib/cajas";
 
 const categorias = [
-  { key: "todos",    label: "Todos",    icon: "🛒" },
-  { key: "verduras", label: "Verduras", icon: "🥦" },
-  { key: "frutas",   label: "Frutas",   icon: "🍋" },
-  { key: "hierbas",  label: "Hierbas",  icon: "🌿" },
-  { key: "huevos",   label: "Huevos",   icon: "🥚" },
-  { key: "kits",     label: "Cajas",    icon: "📦" },
+  { key: "todos",         label: "Todos",        icon: "🛒" },
+  { key: "verduras",      label: "Verduras",     icon: "🥦" },
+  { key: "frutas",        label: "Frutas",       icon: "🍋" },
+  { key: "frutos_secos",  label: "Frutos Secos", icon: "🥜" },
+  { key: "hierbas",       label: "Hierbas",      icon: "🌿" },
+  { key: "huevos",        label: "Huevos",       icon: "🥚" },
+  { key: "kits",          label: "Cajas",        icon: "📦" },
 ];
+
 
 export default function CatalogoCompleto({ productos }: { productos: Product[] }) {
   const [filtro, setFiltro] = useState("todos");
@@ -107,7 +109,7 @@ export default function CatalogoCompleto({ productos }: { productos: Product[] }
             >
               <span>{cat.icon}</span>
               {cat.label}
-              {cat.key === "kits" && (
+              {(cat.key === "kits" || cat.key === "frutos_secos") && (
                 <span className="absolute -top-2 -right-1 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[9px] px-1.5 py-0.5 rounded-full leading-tight">
                   Próx.
                 </span>

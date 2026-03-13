@@ -54,6 +54,7 @@ export default function CheckoutForm() {
   const jueves = useMemo(() => getProximosJueves(4), []);
 
   const [nombre,    setNombre]    = useState("");
+  const [email,     setEmail]     = useState("");
   const [telefono,  setTelefono]  = useState("");
   const [direccion, setDireccion] = useState("");
   const [notas,     setNotas]     = useState("");
@@ -144,6 +145,7 @@ export default function CheckoutForm() {
   function validate() {
     const e: Record<string, string> = {};
     if (!nombre.trim())    e.nombre    = "Ingresa tu nombre";
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Ingresa un correo válido";
     if (!telefono.trim())  e.telefono  = "Ingresa tu teléfono";
     if (!direccion.trim()) e.direccion = "Ingresa tu dirección";
     else if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar/i.test(direccion)) e.direccion = "Solo hacemos delivery en Concón, Reñaca y Jardín del Mar.";
@@ -202,6 +204,7 @@ export default function CheckoutForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre_cliente: nombre,
+          email,
           telefono,
           direccion,
           fecha_entrega: fecha!.toISOString().split("T")[0],
@@ -287,6 +290,16 @@ export default function CheckoutForm() {
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   className={inputClass(!!errors.nombre)}
+                />
+              </Field>
+
+              <Field label="Correo electrónico" error={errors.email}>
+                <input
+                  type="email"
+                  placeholder="tu@correo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputClass(!!errors.email)}
                 />
               </Field>
 

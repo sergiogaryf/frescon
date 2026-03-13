@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { crearPedido, perfilesTable } from "@/lib/airtable";
 import { enviarWhatsApp } from "@/lib/whatsapp";
+import { emailPedidoConfirmado } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      nombre_cliente, telefono, direccion,
+      nombre_cliente, email, telefono, direccion,
       fecha_entrega, notas, total, detalle_pedido,
       suscripcion_activa, referido_por,
     } = body;
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const id = await crearPedido({
-      nombre_cliente, telefono, direccion,
+      nombre_cliente, email, telefono, direccion,
       fecha_entrega, notas, total, detalle_pedido,
       suscripcion_activa, referido_por,
     });
@@ -42,6 +43,14 @@ export async function POST(req: NextRequest) {
           }
         })
         .catch(() => {});
+    }
+
+    // Email al cliente: confirmación de pedido
+    if (email) {
+      emailPedidoConfirmado({
+        nombre: nombre_cliente, email, direccion,
+        fecha_entrega, detalle: detalle_pedido, total: Number(total),
+      }).catch(() => {});
     }
 
     // WhatsApp al cliente: confirmación de pedido

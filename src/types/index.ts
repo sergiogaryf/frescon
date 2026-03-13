@@ -6,7 +6,7 @@ export interface Product {
   origen: string;
   stock: number;
   badges: string[];
-  categoria: "verduras" | "frutas" | "huevos" | "hierbas" | "kits";
+  categoria: "verduras" | "frutas" | "huevos" | "hierbas" | "kits" | "frutos_secos";
   es_estrella: boolean;
   imagen: string;
   unidad: "kg" | "unidad" | "litro" | "atado" | "docena";

@@ -1,14 +1,27 @@
 import { NextResponse } from "next/server";
 import { getPedidos, updatePedido } from "@/lib/airtable";
 import { enviarWhatsApp } from "@/lib/whatsapp";
+import { emailEnCamino, emailEntregado } from "@/lib/email";
 
-/** Devuelve los pedidos de hoy (o del próximo jueves) con estado Confirmado o En camino */
-export async function GET() {
+/** Devuelve los pedidos de hoy. Con ?historial=1 devuelve los últimos 60 días. */
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const historial = searchParams.get("historial") === "1";
+
+    if (historial) {
+      const todos = await getPedidos();
+      const hoy = new Date().toISOString().split("T")[0];
+      const pasados = todos
+        .filter((p) => p.fecha_entrega < hoy)
+        .sort((a, b) => b.fecha_entrega.localeCompare(a.fecha_entrega));
+      return NextResponse.json(pasados);
+    }
+
     const hoy = new Date().toISOString().split("T")[0];
     const todos = await getPedidos({ fecha: hoy });
     const activos = todos.filter((p) =>
-      ["Confirmado", "En camino", "Pendiente"].includes(p.estado)
+      ["Confirmado", "En camino", "Pendiente", "Entregado"].includes(p.estado)
     );
     activos.sort((a, b) => {
       if (a.orden_entrega && b.orden_entrega) return a.orden_entrega - b.orden_entrega;
@@ -37,6 +50,13 @@ export async function PATCH(req: Request) {
             telefono: pedido.telefono,
             tipo:     estado === "En camino" ? "en_camino" : "entregado",
           }).catch(() => {});
+          if (pedido.email) {
+            if (estado === "En camino") {
+              emailEnCamino({ nombre: pedido.nombre_cliente, email: pedido.email }).catch(() => {});
+            } else {
+              emailEntregado({ nombre: pedido.nombre_cliente, email: pedido.email }).catch(() => {});
+            }
+          }
         }
       }).catch(() => {});
     }

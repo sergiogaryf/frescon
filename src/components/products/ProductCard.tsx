@@ -28,12 +28,18 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
   }
 
+  const esProximo = product.categoria === "frutos_secos";
+
   return (
     <div className="bg-white rounded-3xl shadow-md hover:shadow-xl transition-shadow flex flex-col overflow-hidden group">
 
       {/* Imagen + badges */}
       <div className="relative bg-[#f9fafb] pt-6 px-6 pb-2 flex justify-center">
-        {product.es_estrella && (
+        {esProximo ? (
+          <span className="absolute top-3 left-3 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[10px] px-2 py-1 rounded-full">
+            Próximamente
+          </span>
+        ) : product.es_estrella && (
           <span className="absolute top-3 left-3 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[10px] px-2 py-1 rounded-full flex items-center gap-1">
             🌿 Temporada
           </span>
@@ -53,12 +59,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.origen && <p className="text-[#999] text-xs mt-0.5">{product.origen}</p>}
         </div>
 
-        <p className="font-nunito font-black text-[#3AAA35] text-xl">
-          ${product.precio.toLocaleString("es-CL")}
-        </p>
+        {!esProximo && (
+          <p className="font-nunito font-black text-[#3AAA35] text-xl">
+            ${product.precio.toLocaleString("es-CL")}
+          </p>
+        )}
 
-        {/* Selector cantidad — solo si no está en carrito */}
-        {!enCarrito && (
+        {/* Selector cantidad — solo si no está en carrito y no es próximo */}
+        {!enCarrito && !esProximo && (
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCantidad((c) => Math.max(1, c - 1))}
@@ -73,16 +81,22 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Botón agregar / quitar */}
-        <button
-          onClick={handleToggle}
-          className={`w-full py-2.5 rounded-full font-nunito font-black text-sm transition-all ${
-            enCarrito
-              ? "bg-[#3AAA35] text-white hover:bg-red-400"
-              : "bg-[#F9C514] hover:bg-[#E0B010] text-[#1A1A1A]"
-          }`}
-        >
-          {enCarrito ? "✓ Agregado — quitar" : "Agregar al carrito"}
-        </button>
+        {esProximo ? (
+          <button disabled className="w-full py-2.5 rounded-full font-nunito font-black text-sm bg-[#e5e5e5] text-[#aaa] cursor-not-allowed mt-auto">
+            Próximamente
+          </button>
+        ) : (
+          <button
+            onClick={handleToggle}
+            className={`w-full py-2.5 rounded-full font-nunito font-black text-sm transition-all ${
+              enCarrito
+                ? "bg-[#3AAA35] text-white hover:bg-red-400"
+                : "bg-[#F9C514] hover:bg-[#E0B010] text-[#1A1A1A]"
+            }`}
+          >
+            {enCarrito ? "✓ Agregado — quitar" : "Agregar al carrito"}
+          </button>
+        )}
       </div>
     </div>
   );

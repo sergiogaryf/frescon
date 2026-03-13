@@ -44,6 +44,11 @@ export default function RepartidorRutaPage() {
   const [msgChat,        setMsgChat]        = useState("");
   const [mensajesNuevos, setMensajesNuevos] = useState(0);
 
+  // Historial
+  const [historialAbierto,  setHistorialAbierto]  = useState(false);
+  const [historialPedidos,  setHistorialPedidos]  = useState<PedidoAdmin[]>([]);
+  const [historialCargando, setHistorialCargando] = useState(false);
+
   useEffect(() => {
     fetch("/api/repartidor/ruta")
       .then((r) => r.json())
@@ -82,7 +87,6 @@ export default function RepartidorRutaPage() {
     setMarcando(false);
     if (nuevoEstado === "Entregado") {
       setFotoPreview(null);
-      setTimeout(() => setActual((a) => Math.min(a + 1, pedidos.length)), 600);
     }
   }
 
@@ -91,6 +95,16 @@ export default function RepartidorRutaPage() {
     if (file) {
       setFotoPreview(URL.createObjectURL(file));
     }
+  }
+
+  async function abrirHistorial() {
+    setHistorialAbierto(true);
+    if (historialPedidos.length > 0) return;
+    setHistorialCargando(true);
+    const res = await fetch("/api/repartidor/ruta?historial=1");
+    const data = await res.json();
+    setHistorialPedidos(Array.isArray(data) ? data : []);
+    setHistorialCargando(false);
   }
 
   async function cargarChat() {
@@ -169,9 +183,17 @@ export default function RepartidorRutaPage() {
               Entrega {actual + 1} de {pedidos.length}
             </p>
           </div>
-          <button onClick={logout} className="text-white/40 font-nunito text-xs px-3 py-1.5 rounded-full border border-white/20">
-            Salir
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={abrirHistorial}
+              className="text-white/70 font-nunito text-xs px-3 py-1.5 rounded-full border border-white/20 hover:border-white/50"
+            >
+              📋 Historial
+            </button>
+            <button onClick={logout} className="text-white/40 font-nunito text-xs px-3 py-1.5 rounded-full border border-white/20">
+              Salir
+            </button>
+          </div>
         </div>
 
         {/* Barra de progreso mejorada */}
@@ -391,6 +413,48 @@ export default function RepartidorRutaPage() {
             >
               →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Panel historial */}
+      {historialAbierto && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex flex-col justify-end">
+          <div className="bg-white rounded-t-3xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f0f0]">
+              <p className="font-nunito font-black text-[#1A1A1A] text-base">📋 Pedidos anteriores</p>
+              <button onClick={() => setHistorialAbierto(false)} className="text-[#999] hover:text-[#1A1A1A] text-xl">✕</button>
+            </div>
+            <div className="overflow-y-auto flex-1 px-4 py-3">
+              {historialCargando ? (
+                <p className="text-center text-[#999] font-nunito py-10">Cargando…</p>
+              ) : historialPedidos.length === 0 ? (
+                <p className="text-center text-[#999] font-nunito py-10">Sin pedidos anteriores</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {historialPedidos.map((p) => (
+                    <div key={p.id} className="bg-[#f9fafb] rounded-2xl p-4 border border-[#eee]">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="font-nunito font-black text-[#1A1A1A] text-sm leading-tight">{p.nombre_cliente}</p>
+                        <span className={`text-[10px] font-nunito font-black px-2 py-0.5 rounded-full flex-shrink-0 ${
+                          p.estado === "Entregado"   ? "bg-[#3AAA35]/15 text-[#2A7A26]" :
+                          p.estado === "En camino"   ? "bg-orange-100 text-orange-700" :
+                          p.estado === "Cancelado"   ? "bg-red-100 text-red-600" :
+                          "bg-[#F9C514]/20 text-[#7A5F00]"
+                        }`}>
+                          {p.estado}
+                        </span>
+                      </div>
+                      <p className="font-nunito text-xs text-[#999]">{p.fecha_entrega} · {p.direccion}</p>
+                      <p className="font-nunito font-black text-[#3AAA35] text-sm mt-1">${p.total.toLocaleString("es-CL")}</p>
+                      {p.detalle_pedido && (
+                        <p className="font-nunito text-xs text-[#666] mt-1 leading-snug">{p.detalle_pedido}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
