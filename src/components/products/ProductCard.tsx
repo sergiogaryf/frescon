@@ -39,6 +39,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           <span className="absolute top-3 left-3 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[10px] px-2 py-1 rounded-full">
             Próximamente
           </span>
+        ) : product.badges?.includes("nuevo") ? (
+          <span className="absolute top-3 left-3 bg-red-500 text-white font-nunito font-black text-[10px] px-2 py-1 rounded-full">
+            Nuevo
+          </span>
         ) : product.es_estrella && (
           <span className="absolute top-3 left-3 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[10px] px-2 py-1 rounded-full flex items-center gap-1">
             🌿 Temporada
