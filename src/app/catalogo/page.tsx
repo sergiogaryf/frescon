@@ -1,4 +1,4 @@
-export const revalidate = 60;
+export const revalidate = 20;
 
 import CatalogoCompleto from "@/components/sections/CatalogoCompleto";
 import { getProductos } from "@/lib/airtable";
