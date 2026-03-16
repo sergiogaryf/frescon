@@ -45,10 +45,10 @@ export default function Hero() {
 
           <div className="flex flex-col gap-2.5 pb-40">
             <a
-              href="#catalogo"
+              href="/catalogo"
               className="bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-base px-8 py-3 rounded-full text-center"
             >
-              Ver productos
+              Entrar al mercado
             </a>
             <a
               href="#como-funciona"
@@ -80,8 +80,8 @@ export default function Hero() {
             ))}
           </div>
           <div className="flex gap-3">
-            <a href="#catalogo" className="bg-[#F9C514] hover:bg-[#E0B010] text-[#1A1A1A] font-nunito font-black text-base px-8 py-4 rounded-full transition-colors">
-              Ver productos
+            <a href="/catalogo" className="bg-[#F9C514] hover:bg-[#E0B010] text-[#1A1A1A] font-nunito font-black text-base px-8 py-4 rounded-full transition-colors">
+              Entrar al mercado
             </a>
             <a href="#como-funciona" className="border-2 border-white/50 hover:border-white text-white font-nunito font-bold text-base px-8 py-4 rounded-full transition-colors backdrop-blur-sm">
               ¿Cómo funciona?
