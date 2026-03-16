@@ -39,7 +39,7 @@ export default function Hero() {
 
         {/* Contenido al frente */}
         <div className="relative z-10 flex flex-col justify-between flex-1 px-7 pt-4 pb-0">
-          <h1 className="font-nunito font-black text-white text-2xl leading-tight drop-shadow-lg max-w-[60%]">
+          <h1 className="font-nunito font-black text-white text-[2.7rem] leading-tight drop-shadow-lg max-w-[60%]">
             Lo más fresco directo a tu puerta
           </h1>
 
