@@ -17,7 +17,7 @@ export default function Navbar({ transparent = false }: NavbarProps) {
 
   return (
     <nav
-      className={`relative z-30 flex items-center justify-between px-9 md:px-[4.5rem] py-2 md:py-5 ${
+      className={`relative z-30 flex items-center justify-between px-9 md:px-[4.5rem] h-[20vh] md:h-auto md:py-5 ${
         transparent ? "" : "bg-[#2A7A26] shadow-md"
       }`}
     >
