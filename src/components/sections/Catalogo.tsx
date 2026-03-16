@@ -11,6 +11,7 @@ const categorias = [
   { key: "hierbas",  label: "Hierbas",  icon: "🌿" },
   { key: "huevos",   label: "Huevos",   icon: "🥚" },
   { key: "kits",     label: "Kits",     icon: "📦" },
+  { key: "miel",     label: "Miel",     icon: "🍯" },
 ];
 
 export default function Catalogo({ productos }: { productos: Product[] }) {

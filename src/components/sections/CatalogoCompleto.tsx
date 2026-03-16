@@ -16,6 +16,7 @@ const categorias = [
   { key: "hierbas",       label: "Hierbas",      icon: "🌿" },
   { key: "huevos",        label: "Huevos",       icon: "🥚" },
   { key: "kits",          label: "Cajas",        icon: "📦" },
+  { key: "miel",          label: "Miel",         icon: "🍯" },
 ];
 
 
