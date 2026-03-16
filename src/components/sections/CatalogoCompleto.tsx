@@ -49,6 +49,18 @@ export default function CatalogoCompleto({ productos }: { productos: Product[] }
         <Navbar />
       </div>
 
+      {/* Banner móvil — ¿Dónde está mi pedido? */}
+      <Link
+        href="/seguimiento"
+        className="md:hidden flex items-center justify-between bg-[#1A5C18] px-5 py-3 text-white"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📦</span>
+          <span className="font-nunito font-bold text-sm">¿Dónde está mi pedido?</span>
+        </div>
+        <span className="text-[#F9C514] font-nunito font-black text-sm">Ver →</span>
+      </Link>
+
       {/* Banner header */}
       <div className="bg-white px-9 md:px-[4.5rem] py-12 border-b border-[#f0f0f0]">
         <div className="max-w-7xl mx-auto">
