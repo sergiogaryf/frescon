@@ -43,7 +43,7 @@ export default function Hero() {
             Lo más fresco directo a tu puerta
           </h1>
 
-          <div className="flex flex-col gap-2.5 pb-28">
+          <div className="flex flex-col gap-2.5 pb-40">
             <a
               href="#catalogo"
               className="bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-base px-8 py-3 rounded-full text-center"
