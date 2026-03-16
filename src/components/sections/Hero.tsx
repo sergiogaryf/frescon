@@ -38,21 +38,21 @@ export default function Hero() {
         </div>
 
         {/* Contenido al frente */}
-        <div className="relative z-10 flex flex-col justify-between flex-1 px-9 py-10">
-          <h1 className="font-nunito font-black text-white text-4xl leading-tight drop-shadow-lg max-w-[60%]">
+        <div className="relative z-10 flex flex-col justify-between flex-1 px-7 py-8">
+          <h1 className="font-nunito font-black text-white text-3xl leading-tight drop-shadow-lg max-w-[65%]">
             Lo más fresco directo a tu puerta
           </h1>
 
-          <div className="flex flex-col gap-3 pb-8">
+          <div className="flex flex-col gap-2.5 pb-5">
             <a
               href="#catalogo"
-              className="bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-lg px-8 py-4 rounded-full text-center"
+              className="bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-base px-8 py-3 rounded-full text-center"
             >
               Ver productos
             </a>
             <a
               href="#como-funciona"
-              className="border-2 border-white text-white font-nunito font-bold text-lg px-8 py-4 rounded-full text-center"
+              className="border-2 border-white text-white font-nunito font-bold text-base px-8 py-3 rounded-full text-center"
             >
               ¿Cómo funciona?
             </a>
