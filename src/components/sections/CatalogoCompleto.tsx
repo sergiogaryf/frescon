@@ -20,19 +20,30 @@ const categorias = [
 ];
 
 
-export default function CatalogoCompleto({ productos }: { productos: Product[] }) {
+export default function CatalogoCompleto({ productos, favoritos = [] }: { productos: Product[]; favoritos?: string[] }) {
   const [filtro, setFiltro] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
   const [porPagina, setPorPagina] = useState(10);
   const [pagina, setPagina] = useState(1);
 
+  const tieneFavoritos = favoritos.length > 0;
+
   const filtrados = useMemo(() => {
-    return productos.filter((p) => {
+    const base = productos.filter((p) => {
       const matchCategoria = filtro === "todos" || p.categoria === filtro;
       const matchBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase());
       return matchCategoria && matchBusqueda;
     });
-  }, [filtro, busqueda, productos]);
+
+    // Si hay favoritos, ordenar: favoritos primero
+    if (tieneFavoritos && filtro === "todos" && !busqueda) {
+      const esFav = (p: Product) => favoritos.some((f) => p.nombre.toLowerCase().includes(f));
+      const favs = base.filter(esFav);
+      const rest = base.filter((p) => !esFav(p));
+      return [...favs, ...rest];
+    }
+    return base;
+  }, [filtro, busqueda, productos, favoritos, tieneFavoritos]);
 
   const totalPaginas = Math.ceil(filtrados.length / porPagina);
   const paginados = filtrados.slice((pagina - 1) * porPagina, pagina * porPagina);
@@ -86,6 +97,17 @@ export default function CatalogoCompleto({ productos }: { productos: Product[] }
           <span className="text-white text-xl">→</span>
         </Link>
 
+        {/* Banner personalización */}
+        {tieneFavoritos && (
+          <div className="bg-gradient-to-r from-[#F9C514]/20 to-[#3AAA35]/10 rounded-2xl p-4 mb-6 flex items-center gap-3 border border-[#F9C514]/30">
+            <span className="text-2xl">🐱</span>
+            <div>
+              <p className="font-nunito font-black text-[#1A1A1A] text-sm">Catálogo personalizado para ti</p>
+              <p className="font-nunito text-[#666] text-xs">Tus productos favoritos aparecen primero — Celia</p>
+            </div>
+          </div>
+        )}
+
         {/* Buscador + contador */}
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-8">
           <div className="relative w-full md:max-w-sm">
@@ -122,7 +144,7 @@ export default function CatalogoCompleto({ productos }: { productos: Product[] }
             >
               <span>{cat.icon}</span>
               {cat.label}
-              {(cat.key === "kits" || cat.key === "frutos_secos") && (
+              {cat.key === "kits" && (
                 <span className="absolute -top-2 -right-1 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[9px] px-1.5 py-0.5 rounded-full leading-tight">
                   Próx.
                 </span>
