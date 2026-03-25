@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getPedidos } from "@/lib/airtable";
 
+export const dynamic = "force-dynamic";
+
 function parsearItems(detalle: string) {
   return detalle.split("\n").flatMap((linea) => {
     const m = linea.match(/^(\d+(?:\.\d+)?)x\s(.+?)\s\(/);

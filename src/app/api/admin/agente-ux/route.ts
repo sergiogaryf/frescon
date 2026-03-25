@@ -5,6 +5,8 @@ import {
   getMejoras, crearMejora, updateMejora, MejoraUX,
 } from "@/lib/airtable";
 
+export const dynamic = "force-dynamic";
+
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /* ── GET: Obtiene mejoras existentes ── */

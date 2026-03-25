@@ -7,6 +7,8 @@ import {
   MemoriaEntry,
 } from "@/lib/airtable";
 
+export const dynamic = "force-dynamic";
+
 function getLunesYDomingo(): { lunes: string; domingo: string } {
   const hoy = new Date();
   const diaSemana = hoy.getDay(); // 0=domingo, 1=lunes...

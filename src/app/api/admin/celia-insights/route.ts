@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getMemoriaReciente } from "@/lib/airtable";
 
+export const dynamic = "force-dynamic";
+
 function contarCampo(registros: Array<Record<string, string>>, campo: string): Record<string, number> {
   const conteo: Record<string, number> = {};
   for (const r of registros) {

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { memoriaTable } from "@/lib/airtable";
 
+export const dynamic = "force-dynamic";
+
 // GET: agrupa registros de CeliaMemoria por sesion_id
 export async function GET() {
   try {

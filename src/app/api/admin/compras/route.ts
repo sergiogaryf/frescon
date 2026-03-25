@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCompras, crearCompra, updateCompra, deleteCompra } from "@/lib/airtable";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const compras = await getCompras();
