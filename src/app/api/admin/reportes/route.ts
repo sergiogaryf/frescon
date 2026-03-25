@@ -48,7 +48,15 @@ export async function GET() {
       porEstado[p.estado] = (porEstado[p.estado] ?? 0) + 1;
     }
 
-    // Historico agrupado por fecha_entrega
+    // Normalizar cualquier fecha al jueves más cercano (anterior o mismo día)
+    const snapToThursday = (iso: string): string => {
+      const d = new Date(iso + "T12:00:00");
+      const diff = (d.getDay() - 4 + 7) % 7;
+      d.setDate(d.getDate() - diff);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    // Historico agrupado por fecha_entrega (normalizado a jueves)
     const semanales: Record<string, {
       pedidos: number;
       pagados: number;
@@ -58,7 +66,8 @@ export async function GET() {
     }> = {};
     for (const p of todos) {
       if (p.estado === "Cancelado") continue;
-      const fecha = p.fecha_entrega?.slice(0, 10) ?? "sin fecha";
+      const raw = p.fecha_entrega?.slice(0, 10) ?? "sin fecha";
+      const fecha = raw === "sin fecha" ? raw : snapToThursday(raw);
       if (!semanales[fecha]) semanales[fecha] = { pedidos: 0, pagados: 0, pendientes: 0, ingresosPagados: 0, ingresosPendientes: 0 };
       semanales[fecha].pedidos++;
       if (p.estado === "Pendiente") {

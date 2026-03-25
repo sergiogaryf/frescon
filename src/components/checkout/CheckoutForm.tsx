@@ -224,7 +224,7 @@ export default function CheckoutForm() {
           email,
           telefono,
           direccion,
-          fecha_entrega: fecha!.toISOString().split("T")[0],
+          fecha_entrega: `${fecha!.getFullYear()}-${String(fecha!.getMonth() + 1).padStart(2, "0")}-${String(fecha!.getDate()).padStart(2, "0")}`,
           notas: [detalleEntrega, notas].filter(Boolean).join(" | "),
           total: totalFinal,
           detalle_pedido: detalle,

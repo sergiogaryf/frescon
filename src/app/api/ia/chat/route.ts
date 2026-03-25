@@ -371,11 +371,11 @@ async function executeTool(name: string, input: Record<string, string>, carrito:
       `${i.cantidad ?? 1}x ${i.nombre} (${i.unidad}) - $${(i.precio * (i.cantidad ?? 1)).toLocaleString("es-CL")}`
     ).join("\n");
 
-    // Calcular próximo jueves
-    const d = new Date();
+    // Calcular próximo jueves (en hora Chile, no UTC)
+    const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }));
     const days = (4 - d.getDay() + 7) % 7 || 7;
     d.setDate(d.getDate() + days);
-    const fecha_entrega = d.toISOString().split("T")[0];
+    const fecha_entrega = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
     try {
       const id = await crearPedido({
