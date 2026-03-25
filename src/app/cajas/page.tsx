@@ -59,8 +59,8 @@ function CajaCard({ caja, onAgregar, cargando }: { caja: Caja; onAgregar: () => 
       </div>
 
       {/* Precio + ahorro + boton */}
-      <div className="mt-auto flex items-end justify-between gap-3 pt-2 border-t border-black/5">
-        <div>
+      <div className="mt-auto pt-2 border-t border-black/5 flex flex-col items-center gap-3">
+        <div className="text-center">
           <p className="font-nunito text-[#999] text-sm line-through">
             ${caja.precio_original.toLocaleString("es-CL")}
           </p>
@@ -74,9 +74,9 @@ function CajaCard({ caja, onAgregar, cargando }: { caja: Caja; onAgregar: () => 
         <button
           onClick={onAgregar}
           disabled={cargando}
-          className="flex-shrink-0 font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#3AAA35] hover:bg-[#2A7A26] disabled:opacity-50 text-white transition-colors"
+          className="w-full font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#3AAA35] hover:bg-[#2A7A26] disabled:opacity-50 text-white transition-colors"
         >
-          {cargando ? "..." : "Agregar"}
+          {cargando ? "..." : "Agregar al carrito"}
         </button>
       </div>
     </div>
@@ -241,23 +241,21 @@ function CajaParaTi() {
       {!cajaGenerada ? (
         <>
           <form onSubmit={generarCaja} className="flex flex-col gap-3">
-            <label className="font-nunito font-black text-[#1A1A1A] text-xs">Ingresa tu telefono para generar tu caja</label>
-            <div className="flex gap-2">
-              <input
-                type="tel"
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                placeholder="+56 9 1234 5678"
-                className="flex-1 px-3 py-2.5 rounded-xl border-2 border-[#e5e5e5] focus:border-[#F9C514] focus:outline-none font-nunito text-sm text-[#1A1A1A]"
-              />
-              <button
-                type="submit"
-                disabled={cargando || !telefono.trim()}
-                className="bg-[#F9C514] hover:bg-[#E0B010] disabled:opacity-50 text-[#1A1A1A] font-nunito font-black px-5 py-2.5 rounded-xl text-sm transition-colors"
-              >
-                {cargando ? "..." : "Generar"}
-              </button>
-            </div>
+            <label className="font-nunito font-black text-[#1A1A1A] text-xs text-center">Ingresa tu telefono para generar tu caja</label>
+            <input
+              type="tel"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              placeholder="+56 9 1234 5678"
+              className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e5e5e5] focus:border-[#F9C514] focus:outline-none font-nunito text-sm text-[#1A1A1A]"
+            />
+            <button
+              type="submit"
+              disabled={cargando || !telefono.trim()}
+              className="w-full bg-[#F9C514] hover:bg-[#E0B010] disabled:opacity-50 text-[#1A1A1A] font-nunito font-black px-5 py-3 rounded-full text-sm transition-colors"
+            >
+              {cargando ? "Generando..." : "Generar mi caja"}
+            </button>
           </form>
           {error && <p className="text-red-500 text-xs font-nunito">{error}</p>}
         </>
@@ -279,8 +277,8 @@ function CajaParaTi() {
             ))}
           </div>
 
-          <div className="mt-auto flex items-end justify-between gap-3 pt-2 border-t border-black/5">
-            <div>
+          <div className="mt-auto pt-2 border-t border-black/5 flex flex-col items-center gap-3">
+            <div className="text-center">
               <p className="font-nunito text-[#999] text-sm line-through">
                 ${cajaGenerada.total.toLocaleString("es-CL")}
               </p>
@@ -291,21 +289,19 @@ function CajaParaTi() {
                 5% descuento
               </span>
             </div>
-            <div className="flex flex-col gap-2 items-end">
-              <button
-                onClick={agregarAlCarrito}
-                disabled={agregando}
-                className="font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#3AAA35] hover:bg-[#2A7A26] disabled:opacity-50 text-white transition-colors"
-              >
-                {agregando ? "..." : "Agregar"}
-              </button>
-              <button
-                onClick={() => { setCajaGenerada(null); setError(""); }}
-                className="font-nunito text-xs text-[#999] hover:text-[#666] transition-colors"
-              >
-                Regenerar
-              </button>
-            </div>
+            <button
+              onClick={agregarAlCarrito}
+              disabled={agregando}
+              className="w-full font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#3AAA35] hover:bg-[#2A7A26] disabled:opacity-50 text-white transition-colors"
+            >
+              {agregando ? "..." : "Agregar al carrito"}
+            </button>
+            <button
+              onClick={() => { setCajaGenerada(null); setError(""); }}
+              className="font-nunito text-xs text-[#999] hover:text-[#666] transition-colors"
+            >
+              Regenerar
+            </button>
           </div>
           {error && <p className="text-red-500 text-xs font-nunito mt-1">{error}</p>}
         </>

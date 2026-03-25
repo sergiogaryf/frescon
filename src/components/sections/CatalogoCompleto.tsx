@@ -120,7 +120,7 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
         <Link href="/cajas" className="block bg-gradient-to-r from-[#3AAA35] to-[#2A7A26] rounded-2xl p-4 mb-6 flex items-center justify-between hover:opacity-90 transition-opacity">
           <div>
             <p className="font-nunito font-black text-white text-sm">🎁 Cajas Frescón</p>
-            <p className="font-nunito text-white/80 text-xs mt-0.5">Selecciones creadas por Celia con 7% de descuento</p>
+            <p className="font-nunito text-white/80 text-xs mt-0.5">Selecciones creadas por Celia con 5% de descuento</p>
           </div>
           <span className="text-white text-xl">→</span>
         </Link>
@@ -219,8 +219,8 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
                 </div>
 
                 {/* Precio + botón */}
-                <div className="mt-auto flex items-end justify-between gap-3 pt-2 border-t border-black/5">
-                  <div>
+                <div className="mt-auto pt-2 border-t border-black/5 flex flex-col items-center gap-3">
+                  <div className="text-center">
                     <p className="font-nunito text-[#999] text-sm line-through">${caja.precio_original.toLocaleString("es-CL")}</p>
                     <p className="font-nunito font-black text-[#1A1A1A] text-2xl leading-tight">${caja.precio.toLocaleString("es-CL")}</p>
                     <span className="inline-block bg-[#3AAA35] text-white font-nunito font-black text-xs px-2.5 py-0.5 rounded-full mt-1">
@@ -230,13 +230,39 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
                   <button
                     onClick={() => agregarCaja(caja)}
                     disabled={cargandoId === caja.id}
-                    className="flex-shrink-0 font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#3AAA35] hover:bg-[#2A7A26] disabled:opacity-50 text-white transition-colors"
+                    className="w-full font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#3AAA35] hover:bg-[#2A7A26] disabled:opacity-50 text-white transition-colors"
                   >
-                    {cargandoId === caja.id ? "..." : "Agregar"}
+                    {cargandoId === caja.id ? "..." : "Agregar al carrito"}
                   </button>
                 </div>
               </div>
             ))}
+            {/* Caja personalizada */}
+            <Link
+              href="/cajas"
+              className="bg-gradient-to-br from-[#F9C514]/10 to-[#3AAA35]/5 rounded-3xl p-6 flex flex-col gap-4 border-2 border-[#F9C514]/30 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between">
+                <span className="text-5xl">🐱</span>
+                <span className="bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-xs px-3 py-1 rounded-full">
+                  Personalizada
+                </span>
+              </div>
+              <div>
+                <h2 className="font-nunito font-black text-[#1A1A1A] text-lg leading-tight">Caja Para Ti</h2>
+                <p className="text-[#666] text-sm mt-1 font-nunito leading-snug">
+                  Celia arma una caja con tus productos favoritos, ajustada a lo que sueles pedir. 5% de descuento incluido.
+                </p>
+              </div>
+              <div className="mt-auto pt-2 border-t border-black/5 flex flex-col items-center gap-3">
+                <span className="inline-block bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-xs px-2.5 py-0.5 rounded-full">
+                  5% descuento
+                </span>
+                <span className="w-full text-center font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#3AAA35] text-white">
+                  Crear mi caja
+                </span>
+              </div>
+            </Link>
           </div>
         ) : paginados.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mb-10">
