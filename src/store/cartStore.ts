@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { CartItem, Product } from "@/types";
 
 interface CartStore {
@@ -12,7 +13,7 @@ interface CartStore {
   total: () => number;
 }
 
-export const useCartStore = create<CartStore>((set, get) => ({
+export const useCartStore = create<CartStore>()(persist((set, get) => ({
   items: [],
   isOpen: false,
 
@@ -57,4 +58,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
       (sum, item) => sum + item.product.precio * item.cantidad,
       0
     ),
+}), {
+  name: "frescon-cart",
+  partialize: (state) => ({ items: state.items }),
 }));
