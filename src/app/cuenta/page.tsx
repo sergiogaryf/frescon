@@ -3,7 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { PedidoAdmin } from "@/lib/airtable";
+import { useCartStore } from "@/store/cartStore";
+import { Product } from "@/types";
 
 const ESTADO_STYLE: Record<string, string> = {
   Pendiente:   "bg-[#F9C514]/20 text-[#7A5F00]",
@@ -243,6 +246,54 @@ function PedidoCard({ pedido: p, onUpdate }: {
   const [productos, setProductos] = useState<ProductoAPI[]>([]);
   const [buscaProducto, setBuscaProducto] = useState("");
   const [cargandoProductos, setCargandoProductos] = useState(false);
+  const [cargandoReorder, setCargandoReorder] = useState(false);
+  const [reorderError, setReorderError] = useState("");
+  const reorderItems = useCartStore((s) => s.reorderItems);
+  const router = useRouter();
+
+  async function volverAPedir() {
+    setCargandoReorder(true);
+    setReorderError("");
+    try {
+      const res = await fetch("/api/productos");
+      const catalogo: Product[] = await res.json();
+      if (!Array.isArray(catalogo)) throw new Error();
+
+      const lineas = p.detalle_pedido.split("\n").filter(Boolean);
+      const parsed = lineas.map(parsearLinea).filter((x): x is LineaItem => x !== null);
+
+      const cartItems = parsed
+        .map((item) => {
+          const prod = catalogo.find(
+            (pr) => pr.nombre.toLowerCase() === item.nombre.toLowerCase()
+          );
+          if (!prod) return null;
+          return { product: prod, cantidad: item.cantidad };
+        })
+        .filter((x): x is { product: Product; cantidad: number } => x !== null);
+
+      if (cartItems.length === 0) {
+        setReorderError("Los productos de este pedido ya no estan disponibles.");
+        setCargandoReorder(false);
+        return;
+      }
+
+      reorderItems(cartItems);
+
+      if (cartItems.length < parsed.length) {
+        const noDisponibles = parsed
+          .filter((item) => !catalogo.some((pr) => pr.nombre.toLowerCase() === item.nombre.toLowerCase()))
+          .map((i) => i.nombre);
+        setReorderError(`Algunos productos ya no estan disponibles: ${noDisponibles.join(", ")}. Se agregaron los demas al carrito.`);
+        setTimeout(() => router.push("/checkout"), 2000);
+      } else {
+        router.push("/checkout");
+      }
+    } catch {
+      setReorderError("Error al cargar los productos. Intenta de nuevo.");
+    }
+    setCargandoReorder(false);
+  }
 
   function iniciarEdicion() {
     const lineas = p.detalle_pedido.split("\n").filter(Boolean);
@@ -365,6 +416,22 @@ function PedidoCard({ pedido: p, onUpdate }: {
               </svg>
               Editar pedido
             </button>
+          )}
+          <button
+            onClick={volverAPedir}
+            disabled={cargandoReorder}
+            className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-[#F9C514] hover:bg-[#E0B010] disabled:opacity-50 text-[#1A1A1A] font-nunito font-black text-xs transition-all"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M21 21v-5h-5"/>
+            </svg>
+            {cargandoReorder ? "Cargando..." : "Volver a pedir"}
+          </button>
+          {reorderError && (
+            <p className="mt-2 text-xs font-nunito text-orange-600 text-center">{reorderError}</p>
           )}
         </>
       )}

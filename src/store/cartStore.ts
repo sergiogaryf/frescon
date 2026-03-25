@@ -9,6 +9,7 @@ interface CartStore {
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, cantidad: number) => void;
   clearCart: () => void;
+  reorderItems: (items: CartItem[]) => void;
   toggleCart: () => void;
   total: () => number;
 }
@@ -50,6 +51,8 @@ export const useCartStore = create<CartStore>()(persist((set, get) => ({
   },
 
   clearCart: () => set({ items: [] }),
+
+  reorderItems: (newItems) => set({ items: newItems }),
 
   toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
 
