@@ -10,6 +10,8 @@ interface CartStore {
   updateQuantity: (productId: string, cantidad: number) => void;
   clearCart: () => void;
   reorderItems: (items: CartItem[]) => void;
+  cajaDescuento: number;
+  setCajaDescuento: (pct: number) => void;
   toggleCart: () => void;
   total: () => number;
 }
@@ -50,9 +52,12 @@ export const useCartStore = create<CartStore>()(persist((set, get) => ({
     }));
   },
 
-  clearCart: () => set({ items: [] }),
+  clearCart: () => set({ items: [], cajaDescuento: 0 }),
 
   reorderItems: (newItems) => set({ items: newItems }),
+
+  cajaDescuento: 0,
+  setCajaDescuento: (pct) => set({ cajaDescuento: pct }),
 
   toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
 
@@ -63,5 +68,5 @@ export const useCartStore = create<CartStore>()(persist((set, get) => ({
     ),
 }), {
   name: "frescon-cart",
-  partialize: (state) => ({ items: state.items }),
+  partialize: (state) => ({ items: state.items, cajaDescuento: state.cajaDescuento }),
 }));

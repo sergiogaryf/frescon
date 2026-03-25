@@ -47,7 +47,7 @@ const DELIVERY_COSTO  = 3000;
 const CODIGOS_DESCUENTO: Record<string, number> = { FRESCON10: 10, AMAMOSACELIA: 5 };
 
 export default function CheckoutForm() {
-  const { items, total, clearCart } = useCartStore();
+  const { items, total, clearCart, cajaDescuento, setCajaDescuento } = useCartStore();
   const router      = useRouter();
   const totalValue  = total();
 
@@ -84,7 +84,7 @@ export default function CheckoutForm() {
     setTimeout(() => setBankCopiado(false), 2000);
   }, []);
 
-  const pctDescuento   = (codigoAplicado ? (CODIGOS_DESCUENTO[codigoAplicado] ?? 0) : 0) + (refAplicado ? 5 : 0) + pendienteAplicado;
+  const pctDescuento   = cajaDescuento > 0 ? cajaDescuento : (codigoAplicado ? (CODIGOS_DESCUENTO[codigoAplicado] ?? 0) : 0) + (refAplicado ? 5 : 0) + pendienteAplicado;
   const montoDescuento = Math.round(totalValue * pctDescuento / 100);
   const subtotalConDesc = totalValue - montoDescuento;
   const costoDelivery  = subtotalConDesc >= DELIVERY_MINIMO ? 0 : DELIVERY_COSTO;
@@ -458,6 +458,12 @@ export default function CheckoutForm() {
             </div>
 
             {/* Código de descuento */}
+            {cajaDescuento > 0 ? (
+              <div className="mb-5 bg-[#F9C514]/15 border border-[#F9C514]/30 rounded-2xl px-4 py-3">
+                <p className="font-nunito font-black text-[#1A1A1A] text-sm">🎁 Descuento de caja aplicado: {cajaDescuento}%</p>
+                <p className="font-nunito text-[#666] text-xs mt-1">Las cajas ya incluyen descuento. No se combinan con codigos ni referidos.</p>
+              </div>
+            ) : (
             <div className="mb-5">
               <p className="font-nunito font-black text-[#1A1A1A] text-xs mb-2">🎟️ ¿Tienes un código de descuento?</p>
               {codigoAplicado ? (
@@ -534,6 +540,7 @@ export default function CheckoutForm() {
                 </div>
               )}
             </div>
+            )}
 
             {/* Desglose envío + descuento + total */}
             <div className="bg-[#3AAA35]/8 rounded-2xl px-4 py-3 mb-5 flex flex-col gap-2">
