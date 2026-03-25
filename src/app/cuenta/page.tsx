@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -74,28 +74,45 @@ interface PerfilInfo {
   total_pedidos?: number;
 }
 
+const STORAGE_KEY = "frescon-cuenta-tel";
+
 export default function CuentaPage() {
   const [telefono, setTelefono] = useState("");
   const [pedidos,  setPedidos]  = useState<PedidoAdmin[] | null>(null);
   const [perfil,   setPerfil]   = useState<PerfilInfo | null>(null);
   const [loading,  setLoading]  = useState(false);
 
-  async function buscar(e: React.FormEvent) {
-    e.preventDefault();
-    if (!telefono.trim()) return;
+  const cargarCuenta = useCallback(async (tel: string) => {
     setLoading(true);
     const [resP, resPerfil] = await Promise.all([
-      fetch(`/api/cuenta?telefono=${encodeURIComponent(telefono)}`),
-      fetch(`/api/cliente/perfil?telefono=${encodeURIComponent(telefono)}`),
+      fetch(`/api/cuenta?telefono=${encodeURIComponent(tel)}`),
+      fetch(`/api/cliente/perfil?telefono=${encodeURIComponent(tel)}`),
     ]);
     const data = await resP.json();
     const perfilData = await resPerfil.json();
     setPedidos(Array.isArray(data) ? data : []);
     setPerfil(perfilData?.encontrado ? perfilData : null);
     setLoading(false);
+  }, []);
+
+  // Restaurar sesion al montar
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      setTelefono(saved);
+      cargarCuenta(saved);
+    }
+  }, [cargarCuenta]);
+
+  async function buscar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!telefono.trim()) return;
+    localStorage.setItem(STORAGE_KEY, telefono.trim());
+    await cargarCuenta(telefono.trim());
   }
 
   function cerrarSesion() {
+    localStorage.removeItem(STORAGE_KEY);
     setPedidos(null);
     setPerfil(null);
     setTelefono("");
