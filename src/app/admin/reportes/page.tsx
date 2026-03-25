@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type jsPDFType from "jspdf";
 
 interface Reporte {
   totalPedidos:        number;
@@ -27,16 +28,152 @@ function formatFecha(iso: string) {
   return d.toLocaleDateString("es-CL", { weekday: "short", day: "numeric", month: "short" });
 }
 
-function exportCSVReporte(semanales: Reporte["semanales"]) {
-  const rows = [
-    ["Fecha entrega", "Pedidos", "Pagados", "Pendientes", "Ingresos pagados", "Ingresos pendientes"],
-    ...semanales.map((s) => [s.fecha, s.pedidos, s.pagados, s.pendientes, s.ingresosPagados, s.ingresosPendientes]),
+function fmt(n: number) {
+  return "$" + n.toLocaleString("es-CL");
+}
+
+async function loadLogoBase64(): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.width; c.height = img.height;
+      c.getContext("2d")!.drawImage(img, 0, 0);
+      resolve(c.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve("");
+    img.src = "/icon.png";
+  });
+}
+
+async function exportPdfReporte(data: Reporte) {
+  const { default: jsPDF } = await import("jspdf") as { default: typeof jsPDFType };
+  const doc = new jsPDF();
+  const W = doc.internal.pageSize.getWidth();
+  const logo = await loadLogoBase64();
+
+  // Header verde
+  doc.setFillColor(58, 170, 53);
+  doc.rect(0, 0, W, 38, "F");
+  if (logo) doc.addImage(logo, "PNG", 12, 6, 26, 26);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.text("FRESCON", 42, 20);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "italic");
+  doc.text("Delivery", 42, 28);
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("Reporte General", W - 15, 20, { align: "right" });
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  const hoy = new Date();
+  doc.text(hoy.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" }), W - 15, 28, { align: "right" });
+
+  let y = 50;
+
+  // KPIs
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(26, 26, 26);
+  doc.text("Resumen", 15, y);
+  y += 8;
+
+  doc.setFontSize(9);
+  const kpis = [
+    ["Total pedidos", String(data.totalPedidos)],
+    ["Pagados", String(data.totalPagados)],
+    ["Entregados", String(data.totalEntregados)],
+    ["Pendientes", String(data.totalPendientes)],
+    ["Ingresos pagados", fmt(data.ingresosPagados)],
+    ["Ingresos pendientes", fmt(data.ingresosPendientes)],
+    ["Ticket promedio", fmt(data.ticketPromedio)],
   ];
-  const csv = "\uFEFF" + rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href = url; a.download = `reporte-frescon-${new Date().toISOString().split("T")[0]}.csv`; a.click();
+  for (const [label, value] of kpis) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(102, 102, 102);
+    doc.text(label, 20, y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(26, 26, 26);
+    doc.text(value, 85, y);
+    y += 6;
+  }
+
+  y += 6;
+  doc.setDrawColor(220, 220, 220);
+  doc.line(15, y, W - 15, y);
+  y += 8;
+
+  // Top productos
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(26, 26, 26);
+  doc.text("Top 5 Productos", 15, y);
+  y += 8;
+
+  doc.setFontSize(9);
+  data.topProductos.forEach((p, i) => {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(102, 102, 102);
+    doc.text(`${i + 1}.`, 20, y);
+    doc.setTextColor(26, 26, 26);
+    doc.text(p.nombre, 28, y);
+    doc.setTextColor(58, 170, 53);
+    doc.text(`${p.cantidad} u.`, 100, y);
+    y += 6;
+  });
+
+  y += 6;
+  doc.line(15, y, W - 15, y);
+  y += 8;
+
+  // Tabla historico semanal
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(26, 26, 26);
+  doc.text("Historico por fecha de entrega", 15, y);
+  y += 8;
+
+  // Header tabla
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(102, 102, 102);
+  doc.text("Fecha", 15, y);
+  doc.text("Pedidos", 60, y, { align: "right" });
+  doc.text("Pagados", 100, y, { align: "right" });
+  doc.text("Sin pago", 140, y, { align: "right" });
+  doc.text("Ticket prom.", W - 15, y, { align: "right" });
+  y += 3;
+  doc.line(15, y, W - 15, y);
+  y += 5;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  for (const s of data.semanales) {
+    doc.setTextColor(26, 26, 26);
+    doc.text(formatFecha(s.fecha), 15, y);
+    doc.text(String(s.pedidos), 60, y, { align: "right" });
+    doc.setTextColor(58, 170, 53);
+    doc.text(s.ingresosPagados > 0 ? fmt(s.ingresosPagados) : "\u2014", 100, y, { align: "right" });
+    doc.setTextColor(122, 95, 0);
+    doc.text(s.ingresosPendientes > 0 ? fmt(s.ingresosPendientes) : "\u2014", 140, y, { align: "right" });
+    doc.setTextColor(102, 102, 102);
+    doc.text(s.pagados > 0 ? fmt(Math.round(s.ingresosPagados / s.pagados)) : "\u2014", W - 15, y, { align: "right" });
+    y += 6;
+  }
+
+  // Footer
+  const footerY = doc.internal.pageSize.getHeight() - 15;
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.2);
+  doc.line(15, footerY, W - 15, footerY);
+  doc.setTextColor(153, 153, 153);
+  doc.setFontSize(7);
+  doc.text("Frescon Delivery | frescon.cl | Del Valle de Aconcagua a tu mesa", W / 2, footerY + 6, { align: "center" });
+
+  doc.save(`reporte-frescon-${hoy.toISOString().split("T")[0]}.pdf`);
 }
 
 export default function AdminReportesPage() {
@@ -68,10 +205,10 @@ export default function AdminReportesPage() {
           <p className="text-[#999] font-nunito text-sm mt-1">Agrupado por fecha de entrega</p>
         </div>
         <button
-          onClick={() => exportCSVReporte(data.semanales)}
+          onClick={() => exportPdfReporte(data)}
           className="bg-[#1A1A1A] hover:bg-[#333] text-white font-nunito font-black px-5 py-2.5 rounded-full text-sm transition-colors"
         >
-          ⬇️ Exportar CSV
+          📄 Exportar PDF
         </button>
       </div>
 
