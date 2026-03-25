@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Product } from "@/types";
 import ProductCard from "@/components/products/ProductCard";
 import Navbar from "@/components/layout/Navbar";
-import { CAJAS } from "@/lib/cajas";
+import { CAJAS, Caja } from "@/lib/cajas";
+import { useCartStore } from "@/store/cartStore";
 
 const categorias = [
   { key: "todos",         label: "Todos",        icon: "🛒" },
@@ -25,6 +27,32 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
   const [busqueda, setBusqueda] = useState("");
   const [porPagina, setPorPagina] = useState(10);
   const [pagina, setPagina] = useState(1);
+  const [cargandoId, setCargandoId] = useState<string | null>(null);
+  const { reorderItems, setCajaDescuento } = useCartStore();
+  const router = useRouter();
+
+  async function agregarCaja(caja: Caja) {
+    setCargandoId(caja.id);
+    try {
+      const res = await fetch("/api/productos");
+      const catalogo: Product[] = await res.json();
+      if (!Array.isArray(catalogo)) { setCargandoId(null); return; }
+      const cantMatch = (s: string) => { const m = s.match(/^(\d+)/); return m ? parseInt(m[1], 10) : 1; };
+      const cartItems = caja.items
+        .map((item) => {
+          const prod = catalogo.find((p) => p.nombre.toLowerCase() === item.nombre.toLowerCase());
+          if (!prod) return null;
+          return { product: prod, cantidad: cantMatch(item.cantidad) };
+        })
+        .filter((x): x is { product: Product; cantidad: number } => x !== null);
+      if (cartItems.length > 0) {
+        reorderItems(cartItems);
+        setCajaDescuento(caja.ahorro);
+        router.push("/checkout");
+      }
+    } catch { /* ignore */ }
+    setCargandoId(null);
+  }
 
   const tieneFavoritos = favoritos.length > 0;
 
@@ -92,7 +120,7 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
         <Link href="/cajas" className="block bg-gradient-to-r from-[#3AAA35] to-[#2A7A26] rounded-2xl p-4 mb-6 flex items-center justify-between hover:opacity-90 transition-opacity">
           <div>
             <p className="font-nunito font-black text-white text-sm">🎁 Cajas Frescón</p>
-            <p className="font-nunito text-white/80 text-xs mt-0.5">Selecciones creadas con ahorro de hasta 18%</p>
+            <p className="font-nunito text-white/80 text-xs mt-0.5">Selecciones creadas por Celia con 7% de descuento</p>
           </div>
           <span className="text-white text-xl">→</span>
         </Link>
@@ -144,11 +172,7 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
             >
               <span>{cat.icon}</span>
               {cat.label}
-              {cat.key === "kits" && (
-                <span className="absolute -top-2 -right-1 bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[9px] px-1.5 py-0.5 rounded-full leading-tight">
-                  Próx.
-                </span>
-              )}
+
             </button>
           ))}
         </div>
@@ -160,12 +184,7 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
               <div key={caja.id} className={`${caja.color} rounded-3xl p-6 flex flex-col gap-4 border border-white shadow-sm`}>
                 {/* Emoji + badge */}
                 <div className="flex items-start justify-between">
-                  <div className="relative inline-flex flex-col items-start gap-1">
-                    <span className="text-5xl">{caja.emoji}</span>
-                    <span className="bg-[#F9C514] text-[#1A1A1A] font-nunito font-black text-[10px] px-2 py-0.5 rounded-full leading-tight">
-                      Próximamente
-                    </span>
-                  </div>
+                  <span className="text-5xl">{caja.emoji}</span>
                   <span className="bg-white/80 backdrop-blur-sm text-[#3AAA35] font-nunito font-black text-xs px-3 py-1 rounded-full border border-[#3AAA35]/20">
                     {caja.badge}
                   </span>
@@ -208,8 +227,12 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
                       Ahorras {caja.ahorro}%
                     </span>
                   </div>
-                  <button disabled className="flex-shrink-0 font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#e5e5e5] text-[#aaa] cursor-not-allowed">
-                    Próximamente
+                  <button
+                    onClick={() => agregarCaja(caja)}
+                    disabled={cargandoId === caja.id}
+                    className="flex-shrink-0 font-nunito font-black text-sm px-5 py-3 rounded-full bg-[#3AAA35] hover:bg-[#2A7A26] disabled:opacity-50 text-white transition-colors"
+                  >
+                    {cargandoId === caja.id ? "..." : "Agregar"}
                   </button>
                 </div>
               </div>
