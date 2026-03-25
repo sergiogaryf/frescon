@@ -249,6 +249,7 @@ function PedidoCard({ pedido: p, onUpdate }: {
   const [cargandoReorder, setCargandoReorder] = useState(false);
   const [reorderError, setReorderError] = useState("");
   const reorderItems = useCartStore((s) => s.reorderItems);
+  const setPedidoBase = useCartStore((s) => s.setPedidoBase);
   const router = useRouter();
 
   async function volverAPedir() {
@@ -432,6 +433,20 @@ function PedidoCard({ pedido: p, onUpdate }: {
           </button>
           {reorderError && (
             <p className="mt-2 text-xs font-nunito text-orange-600 text-center">{reorderError}</p>
+          )}
+          {(p.estado === "Pendiente" || p.estado === "Confirmado") && (
+            <button
+              onClick={() => {
+                setPedidoBase(p.id, p.fecha_entrega, p.detalle_pedido, p.total);
+                router.push("/catalogo");
+              }}
+              className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border-2 border-[#3AAA35] hover:bg-[#3AAA35]/5 text-[#3AAA35] font-nunito font-black text-xs transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/>
+              </svg>
+              Agregar productos a este envio
+            </button>
           )}
         </>
       )}

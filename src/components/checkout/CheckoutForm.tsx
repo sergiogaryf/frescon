@@ -47,7 +47,7 @@ const DELIVERY_COSTO  = 3000;
 const CODIGOS_DESCUENTO: Record<string, number> = { FRESCON10: 10, AMAMOSACELIA: 5 };
 
 export default function CheckoutForm() {
-  const { items, total, clearCart, cajaDescuento, setCajaDescuento } = useCartStore();
+  const { items, total, clearCart, cajaDescuento, setCajaDescuento, pedidoBaseId, pedidoBaseFecha, pedidoBaseDetalle, pedidoBaseTotal } = useCartStore();
   const router      = useRouter();
   const totalValue  = total();
 
@@ -61,7 +61,13 @@ export default function CheckoutForm() {
   const [ciudad,    setCiudad]    = useState("Concón");
   const [detalleEntrega, setDetalleEntrega] = useState("");
   const [notas,     setNotas]     = useState("");
-  const [fecha,     setFecha]     = useState<Date | null>(null);
+  const [fecha,     setFecha]     = useState<Date | null>(() => {
+    if (pedidoBaseFecha) {
+      const d = new Date(pedidoBaseFecha + 'T12:00:00');
+      return isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+  });
   const [pagado,      setPagado]      = useState(false);
   const [suscripcion, setSuscripcion] = useState(false);
   const [errors,      setErrors]      = useState<Record<string, string>>({});
@@ -87,7 +93,7 @@ export default function CheckoutForm() {
   const pctDescuento   = cajaDescuento > 0 ? cajaDescuento : (codigoAplicado ? (CODIGOS_DESCUENTO[codigoAplicado] ?? 0) : 0) + (refAplicado ? 5 : 0) + pendienteAplicado;
   const montoDescuento = Math.round(totalValue * pctDescuento / 100);
   const subtotalConDesc = totalValue - montoDescuento;
-  const costoDelivery  = subtotalConDesc >= DELIVERY_MINIMO ? 0 : DELIVERY_COSTO;
+  const costoDelivery  = pedidoBaseId ? 0 : (subtotalConDesc >= DELIVERY_MINIMO ? 0 : DELIVERY_COSTO);
   const totalFinal     = subtotalConDesc + costoDelivery;
 
   function aplicarCodigo() {
@@ -216,22 +222,38 @@ export default function CheckoutForm() {
       .join("\n");
 
     try {
-      await fetch("/api/pedidos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre_cliente: nombre,
-          email,
-          telefono,
-          direccion,
-          fecha_entrega: `${fecha!.getFullYear()}-${String(fecha!.getMonth() + 1).padStart(2, "0")}-${String(fecha!.getDate()).padStart(2, "0")}`,
-          notas: [detalleEntrega, notas].filter(Boolean).join(" | "),
-          total: totalFinal,
-          detalle_pedido: detalle,
-          suscripcion_activa: suscripcion,
-          referido_por: refAplicado?.codigo ?? "",
-        }),
-      });
+      if (pedidoBaseId) {
+        // Agregar productos a pedido existente
+        const detalleCompleto = pedidoBaseDetalle
+          ? pedidoBaseDetalle + "\n" + detalle
+          : detalle;
+        const totalCompleto = pedidoBaseTotal + totalValue;
+        await fetch(`/api/pedidos/${pedidoBaseId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            detalle_pedido: detalleCompleto,
+            total: totalCompleto,
+          }),
+        });
+      } else {
+        await fetch("/api/pedidos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nombre_cliente: nombre,
+            email,
+            telefono,
+            direccion,
+            fecha_entrega: `${fecha!.getFullYear()}-${String(fecha!.getMonth() + 1).padStart(2, "0")}-${String(fecha!.getDate()).padStart(2, "0")}`,
+            notas: [detalleEntrega, notas].filter(Boolean).join(" | "),
+            total: totalFinal,
+            detalle_pedido: detalle,
+            suscripcion_activa: suscripcion,
+            referido_por: refAplicado?.codigo ?? "",
+          }),
+        });
+      }
     } catch {
       // Si falla Airtable igual continuamos — el WhatsApp es el respaldo
     }
@@ -288,6 +310,12 @@ export default function CheckoutForm() {
           <p className="text-[#666] mt-2">
             Ingresa tus datos, elige tu jueves y confirma el pago por transferencia.
           </p>
+          {pedidoBaseId && (
+            <div className="mt-4 bg-[#3AAA35]/10 border border-[#3AAA35]/30 rounded-2xl px-4 py-3">
+              <p className="font-nunito font-black text-[#2A7A26] text-sm">Agregando productos a tu pedido existente</p>
+              <p className="font-nunito text-[#666] text-xs mt-1">Estos productos se sumaran a tu envio del {pedidoBaseFecha ? new Date(pedidoBaseFecha + "T12:00:00").toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" }) : ""}. Sin cargo de envio adicional.</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -400,6 +428,15 @@ export default function CheckoutForm() {
             </h2>
             <p className="text-[#999] text-xs mb-5">Hacemos delivery todos los jueves.</p>
 
+            {pedidoBaseId && fecha ? (
+              <div className="bg-[#3AAA35]/8 border-2 border-[#3AAA35] rounded-2xl py-4 px-4 flex items-center gap-3">
+                <span className="text-2xl">📅</span>
+                <div>
+                  <p className="font-nunito font-black text-[#1A1A1A] text-sm">{formatJueves(fecha)}</p>
+                  <p className="font-nunito text-[#999] text-xs">Fecha fija de tu pedido existente</p>
+                </div>
+              </div>
+            ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {jueves.map((d) => {
                 const selected = fecha?.toDateString() === d.toDateString();
@@ -420,6 +457,7 @@ export default function CheckoutForm() {
                 );
               })}
             </div>
+            )}
             {errors.fecha && <p className="text-red-400 text-xs mt-2">{errors.fecha}</p>}
           </div>
 
@@ -561,7 +599,11 @@ export default function CheckoutForm() {
               )}
               <div className="flex items-center justify-between">
                 <span className="font-nunito text-[#666] text-sm">📦 Pago por envío</span>
-                {costoDelivery === 0 ? (
+                {pedidoBaseId ? (
+                  <span className="font-nunito font-black text-[#3AAA35] text-sm flex items-center gap-1">
+                    Ya incluido <span className="bg-[#3AAA35] text-white text-[10px] font-black px-2 py-0.5 rounded-full">✓</span>
+                  </span>
+                ) : costoDelivery === 0 ? (
                   <span className="font-nunito font-black text-[#3AAA35] text-sm flex items-center gap-1">
                     Gratis <span className="bg-[#3AAA35] text-white text-[10px] font-black px-2 py-0.5 rounded-full">✓</span>
                   </span>
@@ -569,7 +611,7 @@ export default function CheckoutForm() {
                   <span className="font-nunito font-black text-[#1A1A1A] text-sm">${DELIVERY_COSTO.toLocaleString("es-CL")}</span>
                 )}
               </div>
-              {costoDelivery > 0 && (
+              {!pedidoBaseId && costoDelivery > 0 && (
                 <p className="text-[#999] text-xs">Envío gratis en compras sobre ${DELIVERY_MINIMO.toLocaleString("es-CL")}</p>
               )}
               <div className="border-t border-[#3AAA35]/20 pt-2 flex items-center justify-between">

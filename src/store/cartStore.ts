@@ -12,6 +12,11 @@ interface CartStore {
   reorderItems: (items: CartItem[]) => void;
   cajaDescuento: number;
   setCajaDescuento: (pct: number) => void;
+  pedidoBaseId: string | null;
+  pedidoBaseFecha: string | null;
+  pedidoBaseDetalle: string | null;
+  pedidoBaseTotal: number;
+  setPedidoBase: (id: string, fecha: string, detalle: string, total: number) => void;
   toggleCart: () => void;
   total: () => number;
 }
@@ -52,12 +57,18 @@ export const useCartStore = create<CartStore>()(persist((set, get) => ({
     }));
   },
 
-  clearCart: () => set({ items: [], cajaDescuento: 0 }),
+  clearCart: () => set({ items: [], cajaDescuento: 0, pedidoBaseId: null, pedidoBaseFecha: null, pedidoBaseDetalle: null, pedidoBaseTotal: 0 }),
 
   reorderItems: (newItems) => set({ items: newItems }),
 
   cajaDescuento: 0,
   setCajaDescuento: (pct) => set({ cajaDescuento: pct }),
+
+  pedidoBaseId: null,
+  pedidoBaseFecha: null,
+  pedidoBaseDetalle: null,
+  pedidoBaseTotal: 0,
+  setPedidoBase: (id, fecha, detalle, total) => set({ pedidoBaseId: id, pedidoBaseFecha: fecha, pedidoBaseDetalle: detalle, pedidoBaseTotal: total }),
 
   toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
 
@@ -68,5 +79,5 @@ export const useCartStore = create<CartStore>()(persist((set, get) => ({
     ),
 }), {
   name: "frescon-cart",
-  partialize: (state) => ({ items: state.items, cajaDescuento: state.cajaDescuento }),
+  partialize: (state) => ({ items: state.items, cajaDescuento: state.cajaDescuento, pedidoBaseId: state.pedidoBaseId, pedidoBaseFecha: state.pedidoBaseFecha, pedidoBaseDetalle: state.pedidoBaseDetalle, pedidoBaseTotal: state.pedidoBaseTotal }),
 }));
