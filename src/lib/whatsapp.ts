@@ -14,16 +14,60 @@ export interface NotifData {
   nombre:   string;
   telefono: string;
   tipo:     TipoNotif;
-  extra?:   string; // info adicional (detalle, etc.)
+  extra?:   string; // mensaje personalizado directo (ej: repartidor)
+  pedido?: {
+    detalle:        string;
+    total:          number;
+    fecha_entrega:  string;
+    direccion:      string;
+  };
+}
+
+function formatFechaEntrega(iso: string): string {
+  if (!iso) return "próximo jueves";
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "short" });
 }
 
 function buildMensaje(data: NotifData): string {
-  const { nombre, tipo, extra } = data;
-  // Si viene mensaje personalizado (ej: notif al repartidor), úsalo directamente
+  const { nombre, tipo, extra, pedido } = data;
+
+  // Mensaje personalizado directo (repartidor)
   if (extra && tipo === "pedido_confirmado" && nombre === "Repartidor") return extra;
+
   switch (tipo) {
-    case "pedido_confirmado":
+    case "pedido_confirmado": {
+      // Si tenemos detalle del pedido, enviar resumen completo
+      if (pedido) {
+        const bankName    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "Banco Estado";
+        const bankHolder  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Frescon SpA";
+        const bankRut     = process.env.NEXT_PUBLIC_BANK_RUT     ?? "76.123.456-7";
+        const bankAccount = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "000-000000-00";
+        const bankEmail   = process.env.NEXT_PUBLIC_BANK_EMAIL   ?? "pagos@frescon.cl";
+        const telLimpio   = data.telefono.replace(/\D/g, "").slice(-9);
+
+        return (
+          `✅ *¡Pedido confirmado, ${nombre}!*\n\n` +
+          `🛒 *Tu pedido:*\n` +
+          `${pedido.detalle}\n\n` +
+          `💰 *Total: $${pedido.total.toLocaleString("es-CL")}*\n\n` +
+          `📅 *Entrega:* ${formatFechaEntrega(pedido.fecha_entrega)}\n` +
+          `⏰ *Horario:* 10:00 a 13:00 hrs\n` +
+          `📍 *Dirección:* ${pedido.direccion}\n\n` +
+          `💳 *Datos para transferencia:*\n` +
+          `${bankName}\n` +
+          `${bankHolder}\n` +
+          `RUT: ${bankRut}\n` +
+          `Cuenta: ${bankAccount}\n` +
+          `Email: ${bankEmail}\n\n` +
+          `📦 *Sigue tu pedido en:*\n` +
+          `frescon.cl/seguimiento?tel=${telLimpio}\n\n` +
+          `¿Dudas? Responde este mensaje 🐱\n` +
+          `— Celia, Frescón 🌿`
+        );
+      }
       return `¡Hola ${nombre}! 🌿 Tu pedido Frescón fue recibido y confirmado. Te esperamos el próximo jueves entre 10:00 y 13:00. Si tienes cambios o dudas, responde este mensaje. ¡Gracias! — Celia 🐱`;
+    }
     case "en_camino":
       return `¡${nombre}, tu pedido Frescón ya está en camino! 🚗🥦 El repartidor llegará pronto. Puedes seguir tu pedido en: frescon.cl/seguimiento — Celia 🐱`;
     case "entregado":

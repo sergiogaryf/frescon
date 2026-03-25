@@ -46,6 +46,9 @@ PERSONALIDAD Y VIDA:
 - Cuando detectas cualquier dato del perfil (dieta, actividad, signo, nombre, intereses), llamas silenciosamente a registrar_perfil sin mencionarlo al cliente
 - Si el cliente da su teléfono, usa recordar_cliente para buscar su historial y salúdalo de forma personalizada
 - Si recordar_cliente devuelve un ultimo_pedido, ofrece repetirlo: "Vi que la última vez pediste [detalle]. ¿Lo repetimos esta semana? 🛒"
+- Si recordar_cliente devuelve favoritos o preferencias, úsalos para personalizar: recomienda primero sus productos favoritos y sugiere cosas nuevas compatibles
+- Si el perfil tiene zona, menciónala naturalmente: "¡En [zona] entregamos los jueves!"
+- Si devuelve catalogo_link, compártelo: "Armé tu catálogo personalizado: [link] 🛒"
 - Adaptas tus recomendaciones al perfil: gym → proteína vegetal, legumbres, hongos; bailarín → energía y ligereza; sedentarios → digestivos, fibra; precio → combos económicos; frescura → productos estrella
 - Cuando recomiendas varios productos juntos, usa armar_canasta para generar una selección coherente
 - Cuando alguien quiere ideas para cocinar o tiene ingredientes, usa sugerir_receta para crear una receta con productos del catálogo disponible
@@ -175,6 +178,7 @@ const TOOLS_CLIENTE: Anthropic.Tool[] = [
         dieta:            { type: "string", description: "vegano, vegetariano, omnivoro, sin_gluten, sin_lactosa, flexitariano" },
         signo_zodiacal:   { type: "string", description: "Signo del zodiaco si lo mencionó" },
         nombre_detectado: { type: "string", description: "Nombre del cliente si lo mencionó" },
+        preferencias:     { type: "string", description: "Preferencias alimentarias detectadas: vegano, sin_gluten, familia_con_niños, etc." },
       },
       required: ["perfil"],
     },
@@ -260,16 +264,20 @@ async function executeTool(name: string, input: Record<string, string>, carrito:
       return { encontrado: false, mensaje: "Cliente nuevo, sin historial previo", ultimo_pedido: reorden };
     }
     return {
-      encontrado:   true,
-      nombre:       perfil.nombre_detectado,
-      perfil:       perfil.perfil,
-      dieta:        perfil.dieta,
-      intereses:    perfil.intereses,
-      signo:        perfil.signo_zodiacal,
-      visitas:      perfil.total_conversaciones,
-      favoritos:    perfil.productos_favoritos,
-      satisfaccion: perfil.encuesta_satisfaccion,
-      ultimo_pedido: reorden,
+      encontrado:     true,
+      nombre:         perfil.nombre_detectado,
+      perfil:         perfil.perfil,
+      dieta:          perfil.dieta,
+      intereses:      perfil.intereses,
+      signo:          perfil.signo_zodiacal,
+      visitas:        perfil.total_conversaciones,
+      favoritos:      perfil.productos_favoritos,
+      zona:           perfil.zona,
+      preferencias:   perfil.preferencias,
+      total_pedidos:  perfil.total_pedidos,
+      satisfaccion:   perfil.encuesta_satisfaccion,
+      ultimo_pedido:  reorden,
+      catalogo_link:  `frescon.cl/catalogo?tel=${input.telefono.replace(/\\D/g, "").slice(-9)}`,
     };
   }
 
@@ -491,7 +499,7 @@ export async function POST(req: Request) {
   type ProductoSugerido = Record<string, unknown>;
   type PerfilDetectado = {
     perfil?: string; intereses?: string; dieta?: string;
-    signo_zodiacal?: string; nombre_detectado?: string;
+    signo_zodiacal?: string; nombre_detectado?: string; preferencias?: string;
   };
   const productosSugeridos: ProductoSugerido[] = [];
   let perfilDetectado: PerfilDetectado = {};

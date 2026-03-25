@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { crearPedido, perfilesTable } from "@/lib/airtable";
+import { crearPedido, perfilesTable, upsertPerfilCliente } from "@/lib/airtable";
 import { enviarWhatsApp } from "@/lib/whatsapp";
 import { emailPedidoConfirmado } from "@/lib/email";
 
@@ -53,8 +53,18 @@ export async function POST(req: NextRequest) {
       }).catch(() => {});
     }
 
-    // WhatsApp al cliente: confirmación de pedido
-    enviarWhatsApp({ nombre: nombre_cliente, telefono, tipo: "pedido_confirmado" }).catch(() => {});
+    // WhatsApp al cliente: confirmación con resumen completo
+    enviarWhatsApp({
+      nombre:   nombre_cliente,
+      telefono,
+      tipo:     "pedido_confirmado",
+      pedido: {
+        detalle:       detalle_pedido,
+        total:         Number(total),
+        fecha_entrega,
+        direccion,
+      },
+    }).catch(() => {});
 
     // WhatsApp al repartidor: nuevo pedido recibido
     const telRepartidor = process.env.REPARTIDOR_WHATSAPP_NUMBER;
@@ -71,9 +81,56 @@ export async function POST(req: NextRequest) {
       enviarWhatsApp({ nombre: "Repartidor", telefono: telRepartidor, tipo: "pedido_confirmado", extra: msgRepartidor }).catch(() => {});
     }
 
+    // Auto-enriquecer perfil del cliente
+    enrichPerfilCliente({
+      telefono, nombre_cliente, direccion, detalle_pedido,
+    }).catch(() => {});
+
     return NextResponse.json({ id }, { status: 201 });
   } catch (err) {
     console.error("Error creando pedido:", err);
     return NextResponse.json({ error: "Error al guardar el pedido" }, { status: 500 });
   }
+}
+
+/* ── Auto-enriquecer perfil del cliente tras pedido ── */
+function detectarZona(direccion: string): string {
+  const d = direccion.toLowerCase();
+  if (/reñaca|renaca/.test(d))     return "Reñaca";
+  if (/jard[ií]n del mar/.test(d)) return "Jardín del Mar";
+  return "Concón";
+}
+
+function extraerProductos(detalle: string): string[] {
+  return detalle.split("\n")
+    .map((l) => l.match(/^\d+x\s+(.+?)\s+\(/)?.[1]?.trim())
+    .filter((n): n is string => !!n);
+}
+
+function detectarPreferencias(productos: string[]): string {
+  const prefs: string[] = [];
+  const nombres = productos.join(" ").toLowerCase();
+  if (/lechuga|espinaca|acelga|tomate|zanahoria|brocoli|zapallo/.test(nombres)) prefs.push("verduras");
+  if (/manzana|naranja|palta|platano|limon|frutilla|uva/.test(nombres))         prefs.push("frutas");
+  if (/hongo|champiñon/.test(nombres))                                           prefs.push("hongos");
+  if (/huevo/.test(nombres))                                                     prefs.push("huevos");
+  if (/miel/.test(nombres))                                                      prefs.push("miel");
+  return prefs.join(", ");
+}
+
+async function enrichPerfilCliente(data: {
+  telefono: string; nombre_cliente: string; direccion: string; detalle_pedido: string;
+}) {
+  const productos = extraerProductos(data.detalle_pedido);
+  const zona = detectarZona(data.direccion);
+  const preferencias = detectarPreferencias(productos);
+
+  await upsertPerfilCliente(data.telefono, {
+    nombre_detectado:      data.nombre_cliente,
+    zona,
+    preferencias,
+    productos_favoritos:   productos.join(", "),
+    ultimo_pedido_detalle: data.detalle_pedido,
+    total_pedidos:         1, // señal para incrementar
+  });
 }

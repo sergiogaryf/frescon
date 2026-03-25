@@ -61,13 +61,18 @@ function ReferidoShare({ telefono }: { telefono: string }) {
 }
 
 interface PedidoConfirmado {
-  nombre:    string;
-  telefono:  string;
-  direccion: string;
-  fecha:     string;      // "jueves 13 de marzo"
-  total:     number;
-  items:     { nombre: string; cantidad: number; unidad: string; precio: number; imagen: string }[];
-  waUrl:     string;
+  nombre:         string;
+  email?:         string;
+  telefono:       string;
+  calle?:         string;
+  numeroDpto?:    string;
+  ciudad?:        string;
+  direccion:      string;
+  detalleEntrega?: string;
+  fecha:          string;      // "jueves 13 de marzo"
+  total:          number;
+  items:          { nombre: string; cantidad: number; unidad: string; precio: number; imagen: string }[];
+  waUrl:          string;
 }
 
 const unidadLabel: Record<string, string> = {
@@ -165,12 +170,28 @@ export default function ConfirmacionClient() {
             <div className="flex items-center gap-2 text-[#666]">
               <span>👤</span><span>{pedido.nombre}</span>
             </div>
+            {pedido.email && (
+              <div className="flex items-center gap-2 text-[#666]">
+                <span>📧</span><span>{pedido.email}</span>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-[#666]">
               <span>📱</span><span>{pedido.telefono}</span>
             </div>
             <div className="flex items-start gap-2 text-[#666]">
-              <span className="flex-shrink-0">📍</span><span>{pedido.direccion}</span>
+              <span className="flex-shrink-0">📍</span>
+              <div>
+                <span>{pedido.calle ?? pedido.direccion}</span>
+                {pedido.numeroDpto && <span className="text-[#999]">, {pedido.numeroDpto}</span>}
+                {pedido.ciudad && <span className="text-[#999]"> — {pedido.ciudad}</span>}
+              </div>
             </div>
+            {pedido.detalleEntrega && (
+              <div className="flex items-start gap-2 text-[#F9C514]">
+                <span className="flex-shrink-0">🏠</span>
+                <span className="font-black text-[#7A5F00] bg-[#F9C514]/10 px-2 py-0.5 rounded-lg">{pedido.detalleEntrega}</span>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-[#1A1A1A] font-black">
               <span>📅</span><span>Entrega el {pedido.fecha}</span>
             </div>

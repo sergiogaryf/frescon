@@ -11,7 +11,16 @@ interface Msg {
   content: string;
   productos?: Product[];
   pedido?: { id?: string; total?: number; fecha_entrega?: string };
+  datosBanco?: boolean;
 }
+
+const BANK_NAME    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "Banco Estado";
+const BANK_HOLDER  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Frescon SpA";
+const BANK_RUT     = process.env.NEXT_PUBLIC_BANK_RUT     ?? "76.123.456-7";
+const BANK_ACCOUNT = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "000-000000-00";
+const BANK_EMAIL   = process.env.NEXT_PUBLIC_BANK_EMAIL   ?? "pagos@frescon.cl";
+
+const REGEX_BANCO = /transferencia|datos.*(pago|banco|cuenta)|c[oó]mo\s*pag|d[oó]nde\s*transfier|datos\s*bancarios|n[uú]mero\s*de\s*cuenta|rut.*(pago|transferencia)|pagar.*pedido/i;
 
 const INITIAL: Msg = {
   role: "assistant",
@@ -27,6 +36,7 @@ export default function ChatWidget() {
   const getTotal  = useCartStore((s) => s.total);
   const [agregados,     setAgregados]     = useState<Record<string, boolean>>({});
   const [agregadosTodos, setAgregadosTodos] = useState<Record<number, boolean>>({});
+  const [bancoCopiado,  setBancoCopiado]  = useState(false);
 
   const [open,     setOpen]     = useState(false);
   const [mensajes, setMensajes] = useState<Msg[]>([INITIAL]);
@@ -138,6 +148,17 @@ export default function ChatWidget() {
 
     const nuevosMensajes: Msg[] = [...mensajes, { role: "user", content: msg }];
     setMensajes(nuevosMensajes);
+
+    // Intercepción local: datos bancarios
+    if (REGEX_BANCO.test(msg)) {
+      setMensajes([...nuevosMensajes, {
+        role: "assistant",
+        content: "¡Aquí tienes los datos para transferir! 🏦\nRecuerda indicar tu nombre en el comentario de la transferencia para identificar el pago.",
+        datosBanco: true,
+      }]);
+      return;
+    }
+
     setEnviando(true);
     setCargando(true); // muestra dots mientras llega primer chunk
 
@@ -356,6 +377,43 @@ export default function ChatWidget() {
                         <p className="font-nunito text-[#166534] text-[10px] mt-1 opacity-80">Te enviamos la confirmación por WhatsApp. El pago es por transferencia.</p>
                       </div>
                     )}
+                    {m.datosBanco && (
+                      <div className="bg-[#1A1A1A] rounded-2xl px-4 py-3.5 flex flex-col gap-2.5 shadow-md">
+                        <div className="flex items-center justify-between">
+                          <p className="font-nunito font-black text-white text-xs">🏦 Datos de transferencia</p>
+                          <button
+                            onClick={() => {
+                              const texto = `Banco: ${BANK_NAME}\nNombre: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nCuenta: ${BANK_ACCOUNT}\nEmail: ${BANK_EMAIL}`;
+                              navigator.clipboard.writeText(texto);
+                              setBancoCopiado(true);
+                              setTimeout(() => setBancoCopiado(false), 2000);
+                            }}
+                            className={`font-nunito font-black text-[10px] px-2.5 py-1 rounded-full transition-all ${
+                              bancoCopiado
+                                ? "bg-[#3AAA35] text-white"
+                                : "bg-white/15 text-white/80 hover:bg-white/25"
+                            }`}
+                          >
+                            {bancoCopiado ? "✓ Copiado" : "📋 Copiar"}
+                          </button>
+                        </div>
+                        {[
+                          { label: "Banco", value: BANK_NAME },
+                          { label: "Nombre", value: BANK_HOLDER },
+                          { label: "RUT", value: BANK_RUT },
+                          { label: "Cuenta", value: BANK_ACCOUNT },
+                          { label: "Email", value: BANK_EMAIL },
+                        ].map((row) => (
+                          <div key={row.label} className="flex items-center justify-between">
+                            <span className="font-nunito text-white/50 text-[10px] uppercase tracking-wider">{row.label}</span>
+                            <span className="font-nunito font-black text-white text-xs">{row.value}</span>
+                          </div>
+                        ))}
+                        <div className="border-t border-white/10 pt-2 mt-0.5">
+                          <p className="font-nunito text-[#F9C514] text-[10px] font-black text-center">🚚 Envío gratis en pedidos sobre $20.000</p>
+                        </div>
+                      </div>
+                    )}
                     {m.productos && m.productos.length > 0 && (
                       <div className="flex flex-col gap-1.5">
                         {m.productos.map((p) => (
@@ -441,7 +499,7 @@ export default function ChatWidget() {
           {/* Quick replies */}
           {mensajes.length <= 2 && !enviando && (
             <div className="flex-shrink-0 px-3 pb-1 bg-white flex gap-1.5 flex-wrap">
-              {["¿Qué hay esta semana? 🥦", "¿Llegan a mi zona?", "Ver mis pedidos"].map((chip) => (
+              {["¿Qué hay esta semana? 🥦", "¿Llegan a mi zona?", "💳 Datos de pago", "Ver mis pedidos"].map((chip) => (
                 <button
                   key={chip}
                   onClick={() => enviar(chip)}

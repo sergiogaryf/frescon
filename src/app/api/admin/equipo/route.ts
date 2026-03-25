@@ -7,12 +7,13 @@ const tabla = base("Repartidores");
 export async function GET() {
   const records = await tabla.select({ sort: [{ field: "nombre" }] }).all();
   return NextResponse.json(records.map((r) => ({
-    id:           r.id,
-    nombre:       String(r.fields.nombre        ?? ""),
-    telefono:     String(r.fields.telefono       ?? ""),
-    pin_acceso:   String(r.fields.pin_acceso     ?? ""),
-    activo:       Boolean(r.fields.activo),
-    zona_asignada:String(r.fields.zona_asignada  ?? ""),
+    id:            r.id,
+    nombre:        String(r.fields.nombre        ?? ""),
+    telefono:      String(r.fields.telefono       ?? ""),
+    pin_acceso:    String(r.fields.pin_acceso     ?? ""),
+    activo:        Boolean(r.fields.activo),
+    zona_asignada: String(r.fields.zona_asignada  ?? ""),
+    rol:           String(r.fields.rol            ?? "Repartidor"),
   })));
 }
 
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
     pin_acceso:    body.pin_acceso,
     activo:        true,
     zona_asignada: body.zona_asignada ?? "",
+    rol:           body.rol ?? "Repartidor",
   });
   return NextResponse.json({ ok: true, id: record.id });
 }

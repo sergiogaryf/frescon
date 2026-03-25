@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM           = "Frescón <onboarding@resend.dev>";
+const FROM           = "Frescón <pedidos@frescon.cl>";
 const ADMIN_EMAIL    = "sergiogaryf@gmail.com";
 const REPARTIDOR_EMAIL = process.env.REPARTIDOR_EMAIL ?? "";
 const LOGO_URL       = "https://www.frescon.cl/icon.png";

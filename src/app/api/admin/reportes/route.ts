@@ -13,12 +13,24 @@ export async function GET() {
   try {
     const todos = await getPedidos();
 
+    // Confirmado + Entregado + En camino = pagados
+    const pagados    = todos.filter((p) => ["Confirmado", "Entregado", "En camino"].includes(p.estado));
+    const pendientes = todos.filter((p) => p.estado === "Pendiente");
+    const cancelados = todos.filter((p) => p.estado === "Cancelado");
     const entregados = todos.filter((p) => p.estado === "Entregado");
-    const ingresos   = entregados.reduce((s, p) => s + p.total, 0);
 
-    // Top productos
+    const ingresosPagados    = pagados.reduce((s, p) => s + p.total, 0);
+    const ingresosPendientes = pendientes.reduce((s, p) => s + p.total, 0);
+    const ingresosEntregados = entregados.reduce((s, p) => s + p.total, 0);
+
+    const ticketPromedio = pagados.length > 0
+      ? Math.round(ingresosPagados / pagados.length)
+      : 0;
+
+    // Top productos (no cancelados)
+    const noCancelados = todos.filter((p) => p.estado !== "Cancelado");
     const conteo: Record<string, number> = {};
-    for (const p of todos) {
+    for (const p of noCancelados) {
       for (const { nombre, cantidad } of parsearItems(p.detalle_pedido)) {
         conteo[nombre] = (conteo[nombre] ?? 0) + cantidad;
       }
@@ -34,24 +46,42 @@ export async function GET() {
       porEstado[p.estado] = (porEstado[p.estado] ?? 0) + 1;
     }
 
-    // Últimas 4 semanas (por fecha_entrega)
-    const semanales: Record<string, { pedidos: number; ingresos: number }> = {};
+    // Historico agrupado por fecha_entrega
+    const semanales: Record<string, {
+      pedidos: number;
+      pagados: number;
+      pendientes: number;
+      ingresosPagados: number;
+      ingresosPendientes: number;
+    }> = {};
     for (const p of todos) {
-      const semana = p.fecha_entrega?.slice(0, 10) ?? "sin fecha";
-      if (!semanales[semana]) semanales[semana] = { pedidos: 0, ingresos: 0 };
-      semanales[semana].pedidos++;
-      if (p.estado === "Entregado") semanales[semana].ingresos += p.total;
+      if (p.estado === "Cancelado") continue;
+      const fecha = p.fecha_entrega?.slice(0, 10) ?? "sin fecha";
+      if (!semanales[fecha]) semanales[fecha] = { pedidos: 0, pagados: 0, pendientes: 0, ingresosPagados: 0, ingresosPendientes: 0 };
+      semanales[fecha].pedidos++;
+      if (p.estado === "Pendiente") {
+        semanales[fecha].pendientes++;
+        semanales[fecha].ingresosPendientes += p.total;
+      } else {
+        semanales[fecha].pagados++;
+        semanales[fecha].ingresosPagados += p.total;
+      }
     }
     const semanalesArr = Object.entries(semanales)
-      .sort((a, b) => b[0].localeCompare(a[0]))
-      .slice(0, 8)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-8)
       .map(([fecha, v]) => ({ fecha, ...v }));
 
     return NextResponse.json({
-      totalPedidos:   todos.length,
-      totalEntregados: entregados.length,
-      ingresos,
-      ticketPromedio: entregados.length > 0 ? Math.round(ingresos / entregados.length) : 0,
+      totalPedidos:      todos.length,
+      totalPagados:      pagados.length,
+      totalEntregados:   entregados.length,
+      totalPendientes:   pendientes.length,
+      totalCancelados:   cancelados.length,
+      ingresosPagados,
+      ingresosPendientes,
+      ingresosEntregados,
+      ticketPromedio,
       porEstado,
       topProductos,
       semanales: semanalesArr,

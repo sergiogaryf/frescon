@@ -132,8 +132,8 @@ export default function AdminPedidosPage() {
         <div className="ml-auto flex gap-2">
           <button
             onClick={() => {
-              const headers = ["Nombre","Teléfono","Dirección","Fecha entrega","Total","Estado","Detalle"];
-              const rows = pedidos.map((p) => [p.nombre_cliente, p.telefono, p.direccion, p.fecha_entrega, p.total, p.estado, p.detalle_pedido.replace(/\n/g," | ")]);
+              const headers = ["Nombre","Email","Teléfono","Dirección","Notas entrega","Fecha entrega","Total","Estado","Detalle"];
+              const rows = pedidos.map((p) => [p.nombre_cliente, p.email, p.telefono, p.direccion, p.notas, p.fecha_entrega, p.total, p.estado, p.detalle_pedido.replace(/\n/g," | ")]);
               const csv = "\uFEFF" + [headers,...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
               const a = document.createElement("a");
               a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
@@ -197,8 +197,21 @@ export default function AdminPedidosPage() {
                     <a href={`tel:${p.telefono}`} className="text-[#3AAA35] font-black hover:underline">
                       📱 {p.telefono}
                     </a>
+                    {p.email && (
+                      <a href={`mailto:${p.email}`} className="text-[#666] hover:text-[#3AAA35] hover:underline">
+                        📧 {p.email}
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Dirección completa */}
+                  <div className="bg-white rounded-2xl p-3 mb-4 border border-[#f0f0f0]">
+                    <p className="font-nunito font-black text-[#1A1A1A] text-xs mb-1">📍 Dirección</p>
+                    <p className="text-[#666] text-sm font-nunito">{p.direccion}</p>
                     {p.notas && (
-                      <span className="text-[#666]">📝 {p.notas}</span>
+                      <p className="text-[#F9C514] font-nunito font-black text-xs mt-2 bg-[#F9C514]/10 px-3 py-1.5 rounded-xl">
+                        🏠 {p.notas}
+                      </p>
                     )}
                   </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -56,7 +56,10 @@ export default function CheckoutForm() {
   const [nombre,    setNombre]    = useState("");
   const [email,     setEmail]     = useState("");
   const [telefono,  setTelefono]  = useState("");
-  const [direccion, setDireccion] = useState("");
+  const [calle,     setCalle]     = useState("");
+  const [numeroDpto, setNumeroDpto] = useState("");
+  const [ciudad,    setCiudad]    = useState("Concón");
+  const [detalleEntrega, setDetalleEntrega] = useState("");
   const [notas,     setNotas]     = useState("");
   const [fecha,     setFecha]     = useState<Date | null>(null);
   const [pagado,      setPagado]      = useState(false);
@@ -72,6 +75,14 @@ export default function CheckoutForm() {
   const [telPendiente,   setTelPendiente]   = useState("");
   const [pendienteAplicado, setPendienteAplicado] = useState(0);
   const [pendienteError,    setPendienteError]    = useState("");
+  const [bankCopiado,  setBankCopiado]  = useState(false);
+
+  const copiarDatosBancarios = useCallback(() => {
+    const texto = `Banco: ${BANK_NAME}\nTitular: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nCuenta: ${BANK_ACCOUNT}\nEmail: ${BANK_EMAIL}`;
+    navigator.clipboard.writeText(texto);
+    setBankCopiado(true);
+    setTimeout(() => setBankCopiado(false), 2000);
+  }, []);
 
   const pctDescuento   = (codigoAplicado ? (CODIGOS_DESCUENTO[codigoAplicado] ?? 0) : 0) + (refAplicado ? 5 : 0) + pendienteAplicado;
   const montoDescuento = Math.round(totalValue * pctDescuento / 100);
@@ -142,13 +153,17 @@ export default function CheckoutForm() {
     );
   }
 
+  // Componer dirección completa
+  const direccion = [calle, numeroDpto, ciudad].filter(Boolean).join(", ");
+
   function validate() {
     const e: Record<string, string> = {};
     if (!nombre.trim())    e.nombre    = "Ingresa tu nombre";
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Ingresa un correo válido";
     if (!telefono.trim())  e.telefono  = "Ingresa tu teléfono";
-    if (!direccion.trim()) e.direccion = "Ingresa tu dirección";
-    else if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar/i.test(direccion)) e.direccion = "Solo hacemos delivery en Concón, Reñaca y Jardín del Mar.";
+    if (!calle.trim())     e.calle     = "Ingresa tu calle";
+    if (!ciudad.trim())    e.ciudad    = "Selecciona tu ciudad";
+    else if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar/i.test(ciudad)) e.ciudad = "Solo hacemos delivery en Concón, Reñaca y Jardín del Mar.";
     if (!fecha)            e.fecha     = "Elige un jueves de entrega";
     if (!pagado)           e.pagado    = "Confirma que realizaste la transferencia";
     setErrors(e);
@@ -180,8 +195,10 @@ export default function CheckoutForm() {
       `*Datos de entrega:*%0A` +
       `👤 ${nombre}%0A` +
       `📱 ${telefono}%0A` +
-      `📍 ${direccion}%0A` +
+      `📧 ${email}%0A` +
+      `📍 ${calle}${numeroDpto ? `, ${numeroDpto}` : ""}, ${ciudad}%0A` +
       `📅 Jueves: ${fechaStr}` +
+      (detalleEntrega ? `%0A🏠 ${detalleEntrega}` : "") +
       (notas ? `%0A📝 ${notas}` : "") +
       `%0A%0AAdjunto comprobante de transferencia.`;
 
@@ -208,7 +225,7 @@ export default function CheckoutForm() {
           telefono,
           direccion,
           fecha_entrega: fecha!.toISOString().split("T")[0],
-          notas,
+          notas: [detalleEntrega, notas].filter(Boolean).join(" | "),
           total: totalFinal,
           detalle_pedido: detalle,
           suscripcion_activa: suscripcion,
@@ -224,8 +241,13 @@ export default function CheckoutForm() {
     // Guardar datos para la página de confirmación
     sessionStorage.setItem("frescon_pedido_confirmado", JSON.stringify({
       nombre,
+      email,
       telefono,
+      calle,
+      numeroDpto,
+      ciudad,
       direccion,
+      detalleEntrega,
       fecha: fecha ? formatJueves(fecha) : "",
       total: totalFinal,
       items: items.map(({ product: p, cantidad }) => ({
@@ -301,6 +323,7 @@ export default function CheckoutForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   className={inputClass(!!errors.email)}
                 />
+                <p className="text-[#999] text-xs mt-1 font-nunito">📧 Recibirás la confirmación de tu pedido aquí</p>
               </Field>
 
               <Field label="Teléfono" error={errors.telefono}>
@@ -313,21 +336,54 @@ export default function CheckoutForm() {
                 />
               </Field>
 
-              <Field label="Dirección de entrega" error={errors.direccion}>
+              {/* Dirección desglosada */}
+              <Field label="Calle y número" error={errors.calle}>
                 <input
                   type="text"
-                  placeholder="Ej: Av. Las Dunas 123, Concón"
-                  value={direccion}
-                  onChange={(e) => setDireccion(e.target.value)}
-                  className={inputClass(!!errors.direccion)}
+                  placeholder="Ej: Av. Las Dunas 123"
+                  value={calle}
+                  onChange={(e) => setCalle(e.target.value)}
+                  className={inputClass(!!errors.calle)}
                 />
+              </Field>
+
+              <Field label="Depto / casa / oficina (opcional)">
+                <input
+                  type="text"
+                  placeholder="Ej: Depto 304, Torre B"
+                  value={numeroDpto}
+                  onChange={(e) => setNumeroDpto(e.target.value)}
+                  className={inputClass(false)}
+                />
+              </Field>
+
+              <Field label="Ciudad" error={errors.ciudad}>
+                <select
+                  value={ciudad}
+                  onChange={(e) => setCiudad(e.target.value)}
+                  className={inputClass(!!errors.ciudad)}
+                >
+                  <option value="Concón">Concón</option>
+                  <option value="Reñaca">Reñaca</option>
+                  <option value="Jardín del Mar">Jardín del Mar</option>
+                </select>
                 <p className="text-[#999] text-xs mt-1 font-nunito">📍 Solo entregamos en Concón, Reñaca y Jardín del Mar</p>
+              </Field>
+
+              <Field label="Detalle de entrega (opcional)">
+                <input
+                  type="text"
+                  placeholder="Ej: Portón verde, tocar timbre 3, dejar con conserje..."
+                  value={detalleEntrega}
+                  onChange={(e) => setDetalleEntrega(e.target.value)}
+                  className={inputClass(false)}
+                />
               </Field>
 
               <Field label="Notas adicionales (opcional)">
                 <textarea
                   rows={2}
-                  placeholder="Casa con portón verde, tocar timbre 3..."
+                  placeholder="Algún comentario sobre tu pedido..."
                   value={notas}
                   onChange={(e) => setNotas(e.target.value)}
                   className={`${inputClass(false)} resize-none`}
@@ -382,6 +438,23 @@ export default function CheckoutForm() {
               <BankRow label="RUT"      value={BANK_RUT}     />
               <BankRow label="Cuenta"   value={BANK_ACCOUNT} />
               <BankRow label="Email"    value={BANK_EMAIL}   />
+              <button
+                type="button"
+                onClick={copiarDatosBancarios}
+                className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-[#e5e5e5] hover:border-[#3AAA35] hover:bg-[#3AAA35]/5 text-[#666] hover:text-[#3AAA35] font-nunito font-black text-xs transition-all"
+              >
+                {bankCopiado ? (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    Datos copiados
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    Copiar datos bancarios
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Código de descuento */}

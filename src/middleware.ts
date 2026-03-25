@@ -22,9 +22,17 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Proteger rutas /encargado/compras (cookie existe = autenticado via API)
+  if (pathname.startsWith("/encargado/compras")) {
+    const cookie = request.cookies.get("fa_enc");
+    if (!cookie || !cookie.value) {
+      return NextResponse.redirect(new URL("/encargado", request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/repartidor/ruta"],
+  matcher: ["/admin/:path*", "/repartidor/ruta", "/encargado/compras"],
 };
