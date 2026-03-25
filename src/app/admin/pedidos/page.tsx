@@ -35,14 +35,26 @@ function formatMonto(n: number) {
   return "$" + n.toLocaleString("es-CL");
 }
 
+function buildWhatsAppUrl(p: PedidoAdmin): string {
+  const tel = p.telefono.replace(/\D/g, "").replace(/^56/, "");
+  const msg =
+    `✅ *¡Pedido confirmado, ${p.nombre_cliente}!*\n\n` +
+    `🛒 *Tu pedido:*\n${p.detalle_pedido}\n\n` +
+    `💰 *Total: ${formatMonto(p.total)}*\n\n` +
+    `📅 *Entrega:* ${formatFecha(p.fecha_entrega)}\n` +
+    `⏰ *Horario:* 10:00 a 13:00 hrs\n` +
+    `📍 *Dirección:* ${p.direccion}\n` +
+    (p.notas ? `🏠 *Notas:* ${p.notas}\n` : "") +
+    `\n¿Dudas? Responde este mensaje 🐱\n— Celia, Frescón 🌿`;
+  return `https://wa.me/56${tel}?text=${encodeURIComponent(msg)}`;
+}
+
 export default function AdminPedidosPage() {
   const [pedidos,    setPedidos]    = useState<PedidoAdmin[]>([]);
   const [filtro,     setFiltro]     = useState("Todos");
   const [loading,    setLoading]    = useState(true);
   const [expandido,  setExpandido]  = useState<string | null>(null);
   const [actualizando, setActualizando] = useState<string | null>(null);
-  const [notifAbierta, setNotifAbierta] = useState<string | null>(null);
-  const [notifFeedback, setNotifFeedback] = useState<Record<string, string>>({});
 
   const fetchPedidos = useCallback(async () => {
     setLoading(true);
@@ -54,36 +66,6 @@ export default function AdminPedidosPage() {
   }, [filtro]);
 
   useEffect(() => { fetchPedidos(); }, [fetchPedidos]);
-
-  async function notificarCliente(
-    pedido: PedidoAdmin,
-    tipo: "pedido_confirmado" | "en_camino" | "entregado"
-  ) {
-    setNotifAbierta(null);
-    const res = await fetch("/api/admin/notificar-cliente", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telefono: pedido.telefono, nombre: pedido.nombre_cliente, tipo }),
-    });
-    if (res.status === 503) {
-      const data = await res.json();
-      alert(data.error);
-      return;
-    }
-    if (!res.ok) {
-      const data = await res.json();
-      alert("Error al enviar: " + (data.error ?? "Error desconocido"));
-      return;
-    }
-    setNotifFeedback((prev) => ({ ...prev, [pedido.id]: "✓ Enviado" }));
-    setTimeout(() => {
-      setNotifFeedback((prev) => {
-        const next = { ...prev };
-        delete next[pedido.id];
-        return next;
-      });
-    }, 3000);
-  }
 
   async function cambiarEstado(id: string, nuevoEstado: string) {
     setActualizando(id);
@@ -245,42 +227,15 @@ export default function AdminPedidosPage() {
                       </button>
                     ))}
 
-                    {/* Botón notificación WhatsApp */}
-                    <div className="relative ml-auto">
-                      {notifFeedback[p.id] ? (
-                        <span className="px-4 py-2 rounded-full font-nunito font-black text-sm bg-[#e8f5e9] text-[#2e7d32]">
-                          {notifFeedback[p.id]}
-                        </span>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => setNotifAbierta(notifAbierta === p.id ? null : p.id)}
-                            className="px-4 py-2 rounded-full font-nunito font-black text-sm bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition-all"
-                          >
-                            📱 Notificar
-                          </button>
-                          {notifAbierta === p.id && (
-                            <div className="absolute right-0 top-full mt-1 bg-white rounded-2xl shadow-lg border border-[#f0f0f0] py-1 z-10 min-w-[180px]">
-                              {(
-                                [
-                                  { tipo: "pedido_confirmado" as const, label: "Pedido confirmado" },
-                                  { tipo: "en_camino" as const, label: "En camino" },
-                                  { tipo: "entregado" as const, label: "Entregado" },
-                                ] as const
-                              ).map(({ tipo, label }) => (
-                                <button
-                                  key={tipo}
-                                  onClick={() => notificarCliente(p, tipo)}
-                                  className="w-full text-left px-4 py-2 font-nunito text-sm text-[#333] hover:bg-[#f5f5f5] transition-colors"
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
+                    {/* WhatsApp resumen pedido */}
+                    <a
+                      href={buildWhatsAppUrl(p)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto px-4 py-2 rounded-full font-nunito font-black text-sm bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition-all"
+                    >
+                      💬 WhatsApp
+                    </a>
                   </div>
                 </div>
               )}
