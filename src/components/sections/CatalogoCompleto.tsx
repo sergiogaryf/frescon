@@ -180,9 +180,17 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
         {/* Grid kits (cajas) */}
         {filtro === "kits" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-            {CAJAS.map((caja) => (
+            {CAJAS.map((caja) => {
+              const totalReal = caja.items.reduce((sum, item) => {
+                const prod = productos.find((p) => p.nombre.toLowerCase() === item.nombre.toLowerCase());
+                if (!prod) return sum;
+                const cantMatch = item.cantidad.match(/^(\d+)/);
+                const cant = cantMatch ? parseInt(cantMatch[1], 10) : 1;
+                return sum + prod.precio * cant;
+              }, 0);
+              const conDescuento = Math.round(totalReal * (1 - caja.ahorro / 100));
+              return (
               <div key={caja.id} className={`${caja.color} rounded-3xl p-6 flex flex-col gap-4 border border-white shadow-sm`}>
-                {/* Emoji + badge */}
                 <div className="flex items-start justify-between">
                   <span className="text-5xl">{caja.emoji}</span>
                   <span className="bg-white/80 backdrop-blur-sm text-[#3AAA35] font-nunito font-black text-xs px-3 py-1 rounded-full border border-[#3AAA35]/20">
@@ -190,20 +198,23 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
                   </span>
                 </div>
 
-                {/* Nombre + descripción */}
                 <div>
                   <h2 className="font-nunito font-black text-[#1A1A1A] text-lg leading-tight">{caja.nombre}</h2>
                   <p className="text-[#666] text-sm mt-1 font-nunito leading-snug">{caja.descripcion}</p>
                 </div>
 
-                {/* Imagen */}
                 <div className="relative w-full h-32 rounded-2xl overflow-hidden bg-white/60">
                   <Image src={caja.imagen} alt={caja.nombre} fill className="object-contain p-3" />
                 </div>
 
-                {/* Items */}
+                {/* Items con precio real */}
                 <div className="flex flex-col gap-1.5">
-                  {caja.items.map((item) => (
+                  {caja.items.map((item) => {
+                    const prod = productos.find((p) => p.nombre.toLowerCase() === item.nombre.toLowerCase());
+                    const cantMatch = item.cantidad.match(/^(\d+)/);
+                    const cant = cantMatch ? parseInt(cantMatch[1], 10) : 1;
+                    const precio = prod ? prod.precio * cant : 0;
+                    return (
                     <div key={item.nombre} className="flex items-center gap-2">
                       <div className="relative w-6 h-6 flex-shrink-0">
                         <Image src={item.imagen} alt={item.nombre} fill className="object-contain" />
@@ -212,19 +223,23 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
                         {item.nombre} <span className="text-[#999]">({item.cantidad})</span>
                       </span>
                       <span className="font-nunito font-black text-xs text-[#3AAA35] flex-shrink-0">
-                        ${item.subtotal.toLocaleString("es-CL")}
+                        {precio > 0 ? `$${precio.toLocaleString("es-CL")}` : "—"}
                       </span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                {/* Precio + botón */}
                 <div className="mt-auto pt-2 border-t border-black/5 flex flex-col items-center gap-3">
                   <div className="text-center">
-                    <p className="font-nunito text-[#999] text-sm line-through">${caja.precio_original.toLocaleString("es-CL")}</p>
-                    <p className="font-nunito font-black text-[#1A1A1A] text-2xl leading-tight">${caja.precio.toLocaleString("es-CL")}</p>
+                    {totalReal > 0 && (
+                      <>
+                        <p className="font-nunito text-[#999] text-sm line-through">${totalReal.toLocaleString("es-CL")}</p>
+                        <p className="font-nunito font-black text-[#1A1A1A] text-2xl leading-tight">${conDescuento.toLocaleString("es-CL")}</p>
+                      </>
+                    )}
                     <span className="inline-block bg-[#3AAA35] text-white font-nunito font-black text-xs px-2.5 py-0.5 rounded-full mt-1">
-                      Ahorras {caja.ahorro}%
+                      {caja.ahorro}% descuento
                     </span>
                   </div>
                   <button
@@ -236,8 +251,9 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
                   </button>
                 </div>
               </div>
-            ))}
-            {/* Caja personalizada */}
+              );
+            })}
+            {/* Caja personalizada — siempre al final */}
             <Link
               href="/cajas"
               className="bg-gradient-to-br from-[#F9C514]/10 to-[#3AAA35]/5 rounded-3xl p-6 flex flex-col gap-4 border-2 border-[#F9C514]/30 shadow-sm hover:shadow-md transition-shadow"
