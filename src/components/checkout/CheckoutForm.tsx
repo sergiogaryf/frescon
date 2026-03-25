@@ -47,7 +47,7 @@ const DELIVERY_COSTO  = 3000;
 const CODIGOS_DESCUENTO: Record<string, number> = { FRESCON10: 10, AMAMOSACELIA: 5 };
 
 export default function CheckoutForm() {
-  const { items, total, clearCart, cajaDescuento, setCajaDescuento, pedidoBaseId, pedidoBaseFecha, pedidoBaseDetalle, pedidoBaseTotal } = useCartStore();
+  const { items, total, clearCart, cajaDescuento, pedidoBaseId, pedidoBaseFecha, pedidoBaseDetalle, pedidoBaseTotal } = useCartStore();
   const router      = useRouter();
   const totalValue  = total();
 
