@@ -31,6 +31,88 @@ function getFechasRecientes(): string[] {
   return fechas;
 }
 
+async function exportPdfInventario(items: ItemInventario[], fechaLabel: string) {
+  const { initPdf, drawFooter, fmt } = await import("@/lib/pdf");
+  const doc = await initPdf("Inventario", fechaLabel);
+  const W = doc.internal.pageSize.getWidth();
+  let y = 50;
+
+  const totalCompra   = items.reduce((s, i) => s + i.precio_compra_total, 0);
+  const totalVendido  = items.reduce((s, i) => s + i.vendido_kg, 0);
+  const totalSobrante = items.reduce((s, i) => s + i.sobrante_kg, 0);
+
+  doc.setFontSize(9);
+  const kpis = [
+    ["Productos", String(items.length)],
+    ["Pagado Quillota", fmt(totalCompra)],
+    ["Unidades vendidas", totalVendido.toFixed(1)],
+    ["Sobrante total", totalSobrante.toFixed(1)],
+  ];
+  for (const [label, value] of kpis) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(102, 102, 102);
+    doc.text(label, 20, y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(26, 26, 26);
+    doc.text(value, 75, y);
+    y += 6;
+  }
+
+  y += 6;
+  doc.setDrawColor(220, 220, 220);
+  doc.line(15, y, W - 15, y);
+  y += 8;
+
+  // Tabla
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(102, 102, 102);
+  doc.text("Producto", 15, y);
+  doc.text("Comprado", 75, y, { align: "right" });
+  doc.text("Vendido", 105, y, { align: "right" });
+  doc.text("Sobrante", 140, y, { align: "right" });
+  doc.text("Estado", W - 15, y, { align: "right" });
+  y += 3;
+  doc.line(15, y, W - 15, y);
+  y += 5;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  for (const item of items) {
+    if (y > 270) { drawFooter(doc); doc.addPage(); y = 20; }
+    const estado = getEstado(item.sobrante_kg, item.stock_comprado_kg);
+    const pct = item.stock_comprado_kg > 0 ? Math.round((item.sobrante_kg / item.stock_comprado_kg) * 100) : 0;
+
+    doc.setTextColor(26, 26, 26);
+    doc.setFont("helvetica", "bold");
+    doc.text(item.producto_nombre, 15, y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(102, 102, 102);
+    doc.text(String(item.stock_comprado_kg), 75, y, { align: "right" });
+    doc.setTextColor(58, 170, 53);
+    doc.text(String(item.vendido_kg), 105, y, { align: "right" });
+    doc.setTextColor(pct > 40 ? 220 : 26, pct > 40 ? 50 : 26, pct > 40 ? 50 : 26);
+    doc.text(`${item.sobrante_kg} (${pct}%)`, 140, y, { align: "right" });
+    doc.setTextColor(102, 102, 102);
+    doc.text(estado.label, W - 15, y, { align: "right" });
+    y += 5;
+  }
+
+  y += 5;
+  doc.setDrawColor(58, 170, 53);
+  doc.setLineWidth(0.5);
+  doc.line(W - 80, y, W - 15, y);
+  y += 7;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(58, 170, 53);
+  doc.text("TOTAL COMPRA", W - 55, y, { align: "right" });
+  doc.text(fmt(totalCompra), W - 15, y, { align: "right" });
+
+  drawFooter(doc);
+  doc.save(`inventario-frescon-${new Date().toISOString().split("T")[0]}.pdf`);
+}
+
 export default function AdminInventarioPage() {
   const fechas = getFechasRecientes();
   const [fecha,    setFecha]    = useState(fechas[0]);
@@ -65,9 +147,22 @@ export default function AdminInventarioPage() {
     <div className="p-6 lg:p-8 max-w-5xl">
 
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="font-nunito font-black text-[#1A1A1A] text-3xl">📊 Inventario</h1>
-        <p className="text-[#999] font-nunito text-sm mt-1">Stock comprado vs vendido por día de reparto</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="font-nunito font-black text-[#1A1A1A] text-3xl">📊 Inventario</h1>
+          <p className="text-[#999] font-nunito text-sm mt-1">Stock comprado vs vendido por día de reparto</p>
+        </div>
+        {items.length > 0 && (
+          <button
+            onClick={() => {
+              const label = new Date(fecha + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" });
+              exportPdfInventario(items, label);
+            }}
+            className="bg-[#1A1A1A] hover:bg-[#333] text-white font-nunito font-black px-5 py-2.5 rounded-full text-sm transition-colors"
+          >
+            📄 Exportar PDF
+          </button>
+        )}
       </div>
 
       {/* Selector fecha */}

@@ -220,6 +220,85 @@ async function generarPdfPedido(p: PedidoAdmin) {
   return doc;
 }
 
+async function exportPdfPedidos(pedidos: PedidoAdmin[]) {
+  const { initPdf, drawFooter, fmt } = await import("@/lib/pdf");
+  const doc = await initPdf("Resumen de Pedidos", new Date().toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" }));
+  const W = doc.internal.pageSize.getWidth();
+  let y = 50;
+
+  // KPIs
+  const totalMonto = pedidos.reduce((s, p) => s + p.total, 0);
+  const pagados = pedidos.filter((p) => ["Confirmado", "Entregado", "En camino"].includes(p.estado)).length;
+
+  doc.setFontSize(9);
+  const kpis = [
+    ["Total pedidos", String(pedidos.length)],
+    ["Pagados", String(pagados)],
+    ["Monto total", fmt(totalMonto)],
+    ["Ticket promedio", fmt(pedidos.length > 0 ? Math.round(totalMonto / pedidos.length) : 0)],
+  ];
+  for (const [label, value] of kpis) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(102, 102, 102);
+    doc.text(label, 20, y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(26, 26, 26);
+    doc.text(value, 75, y);
+    y += 6;
+  }
+
+  y += 6;
+  doc.setDrawColor(220, 220, 220);
+  doc.line(15, y, W - 15, y);
+  y += 8;
+
+  // Tabla
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(102, 102, 102);
+  doc.text("Cliente", 15, y);
+  doc.text("Entrega", 85, y);
+  doc.text("Estado", 120, y);
+  doc.text("Total", W - 15, y, { align: "right" });
+  y += 3;
+  doc.line(15, y, W - 15, y);
+  y += 5;
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  for (const p of pedidos) {
+    if (y > 270) {
+      drawFooter(doc);
+      doc.addPage();
+      y = 20;
+    }
+    doc.setTextColor(26, 26, 26);
+    doc.text(p.nombre_cliente.slice(0, 30), 15, y);
+    doc.setTextColor(102, 102, 102);
+    doc.text(formatFecha(p.fecha_entrega), 85, y);
+    doc.text(p.estado, 120, y);
+    doc.setTextColor(58, 170, 53);
+    doc.setFont("helvetica", "bold");
+    doc.text(fmt(p.total), W - 15, y, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    y += 5;
+  }
+
+  y += 5;
+  doc.setDrawColor(58, 170, 53);
+  doc.setLineWidth(0.5);
+  doc.line(W - 80, y, W - 15, y);
+  y += 7;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(58, 170, 53);
+  doc.text("TOTAL", W - 55, y, { align: "right" });
+  doc.text(fmt(totalMonto), W - 15, y, { align: "right" });
+
+  drawFooter(doc);
+  doc.save(`pedidos-frescon-${new Date().toISOString().split("T")[0]}.pdf`);
+}
+
 export default function AdminPedidosPage() {
   const [pedidos,    setPedidos]    = useState<PedidoAdmin[]>([]);
   const [filtro,     setFiltro]     = useState("Todos");
@@ -302,6 +381,12 @@ export default function AdminPedidosPage() {
           </button>
         ))}
         <div className="ml-auto flex gap-2">
+          <button
+            onClick={() => exportPdfPedidos(pedidos)}
+            className="px-4 py-1.5 rounded-full font-nunito font-black text-sm bg-[#1A1A1A] text-white hover:bg-[#333] transition-all"
+          >
+            {"\u{1F4C4}"} Exportar PDF
+          </button>
           <button
             onClick={fetchPedidos}
             className="px-4 py-1.5 rounded-full font-nunito font-black text-sm bg-white text-[#666] border border-[#e5e5e5] hover:border-[#3AAA35]/40 transition-all"

@@ -130,11 +130,88 @@ function agregarPedidos(pedidos: PedidoAdmin[]) {
   }).sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
+async function exportPdfCompras(compras: CompraItem[]) {
+  const { initPdf, drawFooter, fmt } = await import("@/lib/pdf");
+  const hoyFmt = new Date().toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" });
+  const doc = await initPdf("Registro de Compras", hoyFmt);
+  const W = doc.internal.pageSize.getWidth();
+  let y = 50;
+
+  const gastoTotal = compras.reduce((s, c) => s + c.subtotal, 0);
+
+  doc.setFontSize(9);
+  const kpis = [
+    ["Total registros", String(compras.length)],
+    ["Gasto total", fmt(gastoTotal)],
+  ];
+  for (const [label, value] of kpis) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(102, 102, 102);
+    doc.text(label, 20, y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(26, 26, 26);
+    doc.text(value, 75, y);
+    y += 6;
+  }
+
+  y += 6;
+  doc.setDrawColor(220, 220, 220);
+  doc.line(15, y, W - 15, y);
+  y += 8;
+
+  // Tabla
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(102, 102, 102);
+  doc.text("Fecha", 15, y);
+  doc.text("Proveedor", 40, y);
+  doc.text("Producto", 80, y);
+  doc.text("Cant.", 130, y, { align: "right" });
+  doc.text("P.Unit.", 155, y, { align: "right" });
+  doc.text("Subtotal", W - 15, y, { align: "right" });
+  y += 3;
+  doc.line(15, y, W - 15, y);
+  y += 5;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  for (const c of compras) {
+    if (y > 270) { drawFooter(doc); doc.addPage(); y = 20; }
+    doc.setTextColor(102, 102, 102);
+    doc.text(formatFecha(c.fecha), 15, y);
+    doc.setTextColor(26, 26, 26);
+    doc.text(c.proveedor.slice(0, 18), 40, y);
+    doc.text(c.producto.slice(0, 22), 80, y);
+    doc.text(`${c.cantidad} ${c.unidad}`, 130, y, { align: "right" });
+    doc.text(fmt(c.precio_unitario), 155, y, { align: "right" });
+    doc.setTextColor(58, 170, 53);
+    doc.setFont("helvetica", "bold");
+    doc.text(fmt(c.subtotal), W - 15, y, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    y += 5;
+  }
+
+  y += 5;
+  doc.setDrawColor(58, 170, 53);
+  doc.setLineWidth(0.5);
+  doc.line(W - 80, y, W - 15, y);
+  y += 7;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(58, 170, 53);
+  doc.text("TOTAL", W - 55, y, { align: "right" });
+  doc.text(fmt(gastoTotal), W - 15, y, { align: "right" });
+
+  drawFooter(doc);
+  doc.save(`compras-frescon-${new Date().toISOString().split("T")[0]}.pdf`);
+}
+
 /* ═══════════════════════════════════════════════════════════════ */
 /* ── Componente principal ── */
 /* ═══════════════════════════════════════════════════════════════ */
 export default function AdminComprasPage() {
   const [tab, setTab] = useState<"registro" | "consolidado">("registro");
+  const [comprasParaPdf, setComprasParaPdf] = useState<CompraItem[]>([]);
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl">
@@ -143,6 +220,12 @@ export default function AdminComprasPage() {
           <h1 className="font-nunito font-black text-[#1A1A1A] text-3xl">🛒 Compras</h1>
           <p className="text-[#999] font-nunito text-sm mt-1">Registro de gastos y lista de compra</p>
         </div>
+        <button
+          onClick={() => exportPdfCompras(comprasParaPdf)}
+          className="bg-[#1A1A1A] hover:bg-[#333] text-white font-nunito font-black px-5 py-2.5 rounded-full text-sm transition-colors"
+        >
+          📄 Exportar PDF
+        </button>
       </div>
 
       {/* Tabs */}
@@ -168,7 +251,7 @@ export default function AdminComprasPage() {
         ))}
       </div>
 
-      {tab === "registro" ? <TabRegistro /> : <TabConsolidado />}
+      {tab === "registro" ? <TabRegistro onComprasLoaded={setComprasParaPdf} /> : <TabConsolidado />}
     </div>
   );
 }
@@ -176,7 +259,7 @@ export default function AdminComprasPage() {
 /* ═══════════════════════════════════════════════════════════════ */
 /* ── TAB: Registro de Compras ── */
 /* ═══════════════════════════════════════════════════════════════ */
-function TabRegistro() {
+function TabRegistro({ onComprasLoaded }: { onComprasLoaded: (c: CompraItem[]) => void }) {
   const [compras,   setCompras]   = useState<CompraItem[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [showForm,  setShowForm]  = useState(false);
@@ -196,7 +279,9 @@ function TabRegistro() {
   async function fetchCompras() {
     setLoading(true);
     const r = await fetch("/api/admin/compras");
-    setCompras(await r.json());
+    const data = await r.json();
+    setCompras(data);
+    onComprasLoaded(data);
     setLoading(false);
   }
 
