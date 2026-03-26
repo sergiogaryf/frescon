@@ -459,9 +459,9 @@ function PedidoCard({ pedido: p, onUpdate }: {
           {esPendiente && (
             <button
               onClick={iniciarEdicion}
-              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border-2 border-[#e5e5e5] hover:border-[#F9C514] hover:bg-[#F9C514]/5 text-[#666] hover:text-[#1A1A1A] font-nunito font-black text-xs transition-all"
+              className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-[#e5e5e5] hover:border-[#F9C514] hover:bg-[#F9C514]/5 active:bg-[#F9C514]/10 text-[#666] hover:text-[#1A1A1A] font-nunito font-black text-sm transition-all"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
                 <path d="m15 5 4 4"/>
               </svg>
@@ -471,9 +471,9 @@ function PedidoCard({ pedido: p, onUpdate }: {
           <button
             onClick={volverAPedir}
             disabled={cargandoReorder}
-            className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-[#F9C514] hover:bg-[#E0B010] disabled:opacity-50 text-[#1A1A1A] font-nunito font-black text-xs transition-all"
+            className="mt-2 w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#F9C514] hover:bg-[#E0B010] active:bg-[#D4A00A] disabled:opacity-50 text-[#1A1A1A] font-nunito font-black text-sm transition-all"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
               <path d="M3 3v5h5"/>
               <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
@@ -491,9 +491,9 @@ function PedidoCard({ pedido: p, onUpdate }: {
                 setPedidoBase(p.id, p.fecha_entrega, p.detalle_pedido, p.total);
                 router.push("/catalogo");
               }}
-              className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border-2 border-[#3AAA35] hover:bg-[#3AAA35]/5 text-[#3AAA35] font-nunito font-black text-xs transition-all"
+              className="mt-2 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-[#3AAA35] hover:bg-[#3AAA35]/5 active:bg-[#3AAA35]/10 text-[#3AAA35] font-nunito font-black text-sm transition-all"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/>
               </svg>
               Agregar productos a este envio
@@ -512,41 +512,45 @@ function PedidoCard({ pedido: p, onUpdate }: {
           ) : (
             <div className="flex flex-col gap-2 mb-3">
               {items.map((item, idx) => (
-                <div key={idx} className="bg-[#f9fafb] rounded-2xl px-3 py-2.5 flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-nunito font-black text-[#1A1A1A] text-xs truncate">{item.nombre}</p>
-                    <p className="font-nunito text-[#999] text-[10px]">
-                      ${item.precioUnitario.toLocaleString("es-CL")} / {item.unidad}
-                    </p>
+                <div key={idx} className="bg-[#f9fafb] rounded-2xl px-3 py-2.5">
+                  {/* Fila 1: nombre + precio + eliminar */}
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-nunito font-black text-[#1A1A1A] text-xs truncate">{item.nombre}</p>
+                      <p className="font-nunito text-[#999] text-[10px]">
+                        ${item.precioUnitario.toLocaleString("es-CL")} / {item.unidad}
+                      </p>
+                    </div>
+                    <span className="font-nunito font-black text-[#3AAA35] text-xs flex-shrink-0">
+                      ${(item.precioUnitario * item.cantidad).toLocaleString("es-CL")}
+                    </span>
+                    <button
+                      onClick={() => eliminarItem(idx)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-[#ccc] hover:text-red-400 hover:bg-red-50 active:bg-red-100 transition-colors flex-shrink-0"
+                      title="Eliminar"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                      </svg>
+                    </button>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {/* Fila 2: controles de cantidad */}
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => cambiarCantidad(idx, -1)}
                       disabled={item.cantidad <= 1}
-                      className="w-6 h-6 rounded-lg bg-white border border-[#e5e5e5] flex items-center justify-center text-[#666] hover:border-[#3AAA35] hover:text-[#3AAA35] disabled:opacity-30 transition-colors text-xs font-black"
+                      className="w-8 h-8 rounded-xl bg-white border border-[#e5e5e5] flex items-center justify-center text-[#666] hover:border-[#3AAA35] hover:text-[#3AAA35] active:bg-[#3AAA35]/10 disabled:opacity-30 transition-colors text-sm font-black"
                     >
                       -
                     </button>
-                    <span className="font-nunito font-black text-[#1A1A1A] text-xs w-6 text-center">{item.cantidad}</span>
+                    <span className="font-nunito font-black text-[#1A1A1A] text-sm w-8 text-center">{item.cantidad}</span>
                     <button
                       onClick={() => cambiarCantidad(idx, 1)}
-                      className="w-6 h-6 rounded-lg bg-white border border-[#e5e5e5] flex items-center justify-center text-[#666] hover:border-[#3AAA35] hover:text-[#3AAA35] transition-colors text-xs font-black"
+                      className="w-8 h-8 rounded-xl bg-white border border-[#e5e5e5] flex items-center justify-center text-[#666] hover:border-[#3AAA35] hover:text-[#3AAA35] active:bg-[#3AAA35]/10 transition-colors text-sm font-black"
                     >
                       +
                     </button>
                   </div>
-                  <span className="font-nunito font-black text-[#3AAA35] text-xs w-16 text-right flex-shrink-0">
-                    ${(item.precioUnitario * item.cantidad).toLocaleString("es-CL")}
-                  </span>
-                  <button
-                    onClick={() => eliminarItem(idx)}
-                    className="w-6 h-6 rounded-lg flex items-center justify-center text-[#ccc] hover:text-red-400 hover:bg-red-50 transition-colors flex-shrink-0"
-                    title="Eliminar"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-                    </svg>
-                  </button>
                 </div>
               ))}
             </div>
@@ -556,7 +560,7 @@ function PedidoCard({ pedido: p, onUpdate }: {
           {!mostrarCatalogo ? (
             <button
               onClick={abrirCatalogo}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border-2 border-dashed border-[#3AAA35]/30 hover:border-[#3AAA35] text-[#3AAA35] font-nunito font-black text-xs transition-all hover:bg-[#3AAA35]/5 mb-3"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-[#3AAA35]/30 hover:border-[#3AAA35] active:bg-[#3AAA35]/10 text-[#3AAA35] font-nunito font-black text-sm transition-all hover:bg-[#3AAA35]/5 mb-3"
             >
               + Agregar producto
             </button>
@@ -569,11 +573,11 @@ function PedidoCard({ pedido: p, onUpdate }: {
                   onChange={(e) => setBuscaProducto(e.target.value)}
                   placeholder="Buscar producto..."
                   autoFocus
-                  className="flex-1 px-3 py-2 rounded-xl border border-[#e5e5e5] focus:border-[#3AAA35] focus:outline-none font-nunito text-xs text-[#1A1A1A] placeholder-[#bbb]"
+                  className="flex-1 px-3 py-2.5 rounded-xl border border-[#e5e5e5] focus:border-[#3AAA35] focus:outline-none font-nunito text-sm text-[#1A1A1A] placeholder-[#bbb]"
                 />
                 <button
                   onClick={() => setMostrarCatalogo(false)}
-                  className="text-[#999] hover:text-[#666] font-nunito text-xs transition-colors"
+                  className="text-[#999] hover:text-[#666] font-nunito text-sm font-black px-3 py-2 transition-colors"
                 >
                   Cerrar
                 </button>
@@ -589,14 +593,14 @@ function PedidoCard({ pedido: p, onUpdate }: {
                       <button
                         key={prod.id}
                         onClick={() => agregarProducto(prod)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#3AAA35]/5 transition-colors text-left w-full"
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-[#3AAA35]/5 active:bg-[#3AAA35]/10 transition-colors text-left w-full"
                       >
                         {prod.imagen && (
-                          <div className="w-7 h-7 relative flex-shrink-0">
+                          <div className="w-8 h-8 relative flex-shrink-0">
                             <Image src={prod.imagen} alt={prod.nombre} fill className="object-contain" />
                           </div>
                         )}
-                        <span className="font-nunito font-black text-[#1A1A1A] text-xs flex-1 truncate">{prod.nombre}</span>
+                        <span className="font-nunito font-black text-[#1A1A1A] text-sm flex-1 truncate">{prod.nombre}</span>
                         <span className="font-nunito text-[#3AAA35] text-xs flex-shrink-0">
                           ${prod.precio.toLocaleString("es-CL")}/{unidadLabel[prod.unidad] ?? prod.unidad}
                         </span>
@@ -620,14 +624,14 @@ function PedidoCard({ pedido: p, onUpdate }: {
           <div className="flex gap-2">
             <button
               onClick={cancelarEdicion}
-              className="flex-1 py-2.5 rounded-2xl border-2 border-[#e5e5e5] hover:border-[#999] text-[#666] font-nunito font-black text-xs transition-colors"
+              className="flex-1 py-3 rounded-2xl border-2 border-[#e5e5e5] hover:border-[#999] active:bg-[#f5f5f5] text-[#666] font-nunito font-black text-sm transition-colors"
             >
               Cancelar
             </button>
             <button
               onClick={guardar}
               disabled={guardando || items.length === 0}
-              className="flex-1 py-2.5 rounded-2xl bg-[#3AAA35] hover:bg-[#2A7A26] disabled:opacity-50 text-white font-nunito font-black text-xs transition-colors"
+              className="flex-1 py-3 rounded-2xl bg-[#3AAA35] hover:bg-[#2A7A26] active:bg-[#1A5A16] disabled:opacity-50 text-white font-nunito font-black text-sm transition-colors"
             >
               {guardando ? "Guardando..." : "Guardar cambios"}
             </button>
