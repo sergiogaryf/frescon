@@ -155,7 +155,7 @@ function CajaParaTi({ catalogo }: { catalogo: Product[] }) {
       const ranking = Object.entries(frecuencia)
         .sort((a, b) => b[1] - a[1])
         .map(([nombre]) => catalogo.find((p) => p.nombre.toLowerCase() === nombre.toLowerCase()))
-        .filter((x): x is Product => x !== null);
+        .filter((x): x is Product => x != null);
 
       if (ranking.length === 0) {
         setError("No pudimos matchear los productos de tus pedidos con el catalogo actual.");
