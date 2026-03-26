@@ -57,7 +57,13 @@ const PRECIOS: Record<string, PrecioMayorista> = {
 };
 
 /* ── Helpers ── */
-function hoy() { return new Date().toISOString().split("T")[0]; }
+function localISO(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function hoy() { return localISO(new Date()); }
 
 function formatFecha(iso: string) {
   if (!iso) return "Sin fecha";
@@ -82,14 +88,14 @@ function agruparPorLote(compras: CompraItem[]) {
 /* ── Consolidado helpers ── */
 function getProximosJueves(n = 4) {
   const dates: string[] = [];
-  const d = new Date();
-  const dow = d.getDay();
-  // Calcular el proximo jueves (dow=4)
-  let daysTo = (4 - dow + 7) % 7;
-  if (daysTo === 0) daysTo = 0; // Si hoy es jueves, incluirlo
-  d.setDate(d.getDate() + daysTo);
+  const now = new Date();
+  const dow = now.getDay();
+  // Calcular dias hasta el proximo jueves (dow=4)
+  // Si hoy es jueves (dow===4), daysTo=0 para incluirlo hasta las 23:59
+  const daysTo = (4 - dow + 7) % 7;
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysTo);
   for (let i = 0; i < n; i++) {
-    dates.push(d.toISOString().split("T")[0]);
+    dates.push(localISO(d));
     d.setDate(d.getDate() + 7);
   }
   return dates;
