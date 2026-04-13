@@ -33,6 +33,21 @@ export async function GET(req: Request) {
   }
 }
 
+export async function PUT(req: Request) {
+  try {
+    const { orden } = await req.json();
+    if (!Array.isArray(orden)) return NextResponse.json({ error: "orden requerido" }, { status: 400 });
+    await Promise.all(
+      orden.map((item: { id: string; orden_entrega: number }) =>
+        updatePedido(item.id, { orden_entrega: item.orden_entrega })
+      )
+    );
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
+
 export async function PATCH(req: Request) {
   const { id, estado } = await req.json();
   if (!id || !estado) return NextResponse.json({ error: "id y estado requeridos" }, { status: 400 });

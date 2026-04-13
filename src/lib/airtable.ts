@@ -46,6 +46,7 @@ export interface OrderPayload {
   detalle_pedido:    string;
   suscripcion_activa?: boolean;
   referido_por?:     string;
+  sector?:           string;
 }
 
 export interface PedidoAdmin {
@@ -61,6 +62,7 @@ export interface PedidoAdmin {
   notas:          string;
   detalle_pedido: string;
   orden_entrega:  number;
+  sector:         string;
 }
 
 export async function crearPedido(data: OrderPayload) {
@@ -78,6 +80,7 @@ export async function crearPedido(data: OrderPayload) {
     detalle_pedido:    data.detalle_pedido,
     fecha_pedido:      new Date().toISOString(),
     suscripcion_activa: data.suscripcion_activa ?? false,
+    ...(data.sector ? { sector: data.sector } : {}),
   });
   return record.id;
 }
@@ -118,6 +121,7 @@ export async function getPedidos(options: {
     notas:          String(r.fields.notas          ?? ""),
     detalle_pedido: String(r.fields.detalle_pedido ?? ""),
     orden_entrega:  Number(r.fields.orden_entrega  ?? 0),
+    sector:         String(r.fields.sector         ?? ""),
   }));
 }
 
@@ -329,6 +333,7 @@ export async function getSuscripciones(): Promise<PedidoAdmin[]> {
     notas:          String(r.fields.notas          ?? ""),
     detalle_pedido: String(r.fields.detalle_pedido ?? ""),
     orden_entrega:  Number(r.fields.orden_entrega  ?? 0),
+    sector:         String(r.fields.sector         ?? ""),
   }));
 }
 

@@ -16,17 +16,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 });
     }
 
-    if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar/i.test(direccion)) {
+    if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar|vi[nñ]a del mar|quilpu[eé]/i.test(direccion)) {
       return NextResponse.json(
-        { error: "Solo realizamos delivery en Concón, Reñaca y Jardín del Mar." },
+        { error: "Solo realizamos delivery en Concón, Reñaca, Jardín del Mar, Viña del Mar y Quilpué." },
         { status: 422 }
       );
     }
 
+    const sector = detectarZona(direccion);
     const id = await crearPedido({
       nombre_cliente, email, telefono, direccion,
       fecha_entrega, notas, total, detalle_pedido,
-      suscripcion_activa, referido_por,
+      suscripcion_activa, referido_por, sector,
     });
 
     // Si el pedido usó un código de referido, acreditar 5% al referidor
@@ -96,8 +97,10 @@ export async function POST(req: NextRequest) {
 /* ── Auto-enriquecer perfil del cliente tras pedido ── */
 function detectarZona(direccion: string): string {
   const d = direccion.toLowerCase();
-  if (/reñaca|renaca/.test(d))     return "Reñaca";
-  if (/jard[ií]n del mar/.test(d)) return "Jardín del Mar";
+  if (/reñaca|renaca/.test(d))           return "Reñaca";
+  if (/jard[ií]n del mar/.test(d))       return "Jardín del Mar";
+  if (/vi[nñ]a del mar|viña/.test(d))    return "Viña del Mar";
+  if (/quilpu[eé]/.test(d))              return "Quilpué";
   return "Concón";
 }
 

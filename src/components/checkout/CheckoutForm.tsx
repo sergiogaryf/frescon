@@ -169,10 +169,15 @@ export default function CheckoutForm() {
     if (!telefono.trim())  e.telefono  = "Ingresa tu teléfono";
     if (!calle.trim())     e.calle     = "Ingresa tu calle";
     if (!ciudad.trim())    e.ciudad    = "Selecciona tu ciudad";
-    else if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar/i.test(ciudad)) e.ciudad = "Solo hacemos delivery en Concón, Reñaca y Jardín del Mar.";
+    else if (!/conc[oó]n|re[nñ]aca|jard[ií]n del mar|vi[nñ]a del mar|quilpu[eé]/i.test(ciudad)) e.ciudad = "Solo hacemos delivery en Concón, Reñaca, Jardín del Mar, Viña del Mar y Quilpué.";
     if (!fecha)            e.fecha     = "Elige un jueves de entrega";
     if (!pagado)           e.pagado    = "Confirma que realizaste la transferencia";
     setErrors(e);
+    if (Object.keys(e).length > 0) {
+      const firstKey = Object.keys(e)[0];
+      const el = document.querySelector(`[data-field="${firstKey}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
     return Object.keys(e).length === 0;
   }
 
@@ -333,7 +338,7 @@ export default function CheckoutForm() {
             </h2>
 
             <div className="flex flex-col gap-4">
-              <Field label="Nombre completo" error={errors.nombre}>
+              <Field label="Nombre completo" error={errors.nombre} fieldKey="nombre">
                 <input
                   type="text"
                   placeholder="María González"
@@ -343,7 +348,7 @@ export default function CheckoutForm() {
                 />
               </Field>
 
-              <Field label="Correo electrónico" error={errors.email}>
+              <Field label="Correo electrónico" error={errors.email} fieldKey="email">
                 <input
                   type="email"
                   placeholder="tu@correo.com"
@@ -354,7 +359,7 @@ export default function CheckoutForm() {
                 <p className="text-[#999] text-xs mt-1 font-nunito">📧 Recibirás la confirmación de tu pedido aquí</p>
               </Field>
 
-              <Field label="Teléfono" error={errors.telefono}>
+              <Field label="Teléfono" error={errors.telefono} fieldKey="telefono">
                 <input
                   type="tel"
                   placeholder="+56 9 1234 5678"
@@ -365,7 +370,7 @@ export default function CheckoutForm() {
               </Field>
 
               {/* Dirección desglosada */}
-              <Field label="Calle y número" error={errors.calle}>
+              <Field label="Calle y número" error={errors.calle} fieldKey="calle">
                 <input
                   type="text"
                   placeholder="Ej: Av. Las Dunas 123"
@@ -385,7 +390,7 @@ export default function CheckoutForm() {
                 />
               </Field>
 
-              <Field label="Ciudad" error={errors.ciudad}>
+              <Field label="Ciudad" error={errors.ciudad} fieldKey="ciudad">
                 <select
                   value={ciudad}
                   onChange={(e) => setCiudad(e.target.value)}
@@ -394,8 +399,10 @@ export default function CheckoutForm() {
                   <option value="Concón">Concón</option>
                   <option value="Reñaca">Reñaca</option>
                   <option value="Jardín del Mar">Jardín del Mar</option>
+                  <option value="Viña del Mar">Viña del Mar</option>
+                  <option value="Quilpué">Quilpué</option>
                 </select>
-                <p className="text-[#999] text-xs mt-1 font-nunito">📍 Solo entregamos en Concón, Reñaca y Jardín del Mar</p>
+                <p className="text-[#999] text-xs mt-1 font-nunito">📍 Solo entregamos en Concón, Reñaca, Jardín del Mar, Viña del Mar y Quilpué</p>
               </Field>
 
               <Field label="Detalle de entrega (opcional)">
@@ -421,7 +428,7 @@ export default function CheckoutForm() {
           </div>
 
           {/* Fecha de entrega */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 shadow-sm" data-field="fecha">
             <h2 className="font-nunito font-black text-[#1A1A1A] text-lg mb-2 flex items-center gap-2">
               <span className="w-7 h-7 rounded-full bg-[#3AAA35] text-white text-xs font-black flex items-center justify-center">2</span>
               Elige tu jueves
@@ -646,21 +653,6 @@ export default function CheckoutForm() {
               </div>
             </div>
 
-            {/* Checkbox confirmación */}
-            <label className={`flex items-start gap-3 cursor-pointer p-3 rounded-2xl border-2 transition-colors ${
-              pagado ? "border-[#3AAA35] bg-[#3AAA35]/5" : errors.pagado ? "border-red-300 bg-red-50" : "border-[#e5e5e5]"
-            }`}>
-              <input
-                type="checkbox"
-                checked={pagado}
-                onChange={(e) => { setPagado(e.target.checked); setErrors((er) => ({ ...er, pagado: "" })); }}
-                className="mt-0.5 accent-[#3AAA35] w-4 h-4 flex-shrink-0"
-              />
-              <span className="font-nunito text-sm text-[#1A1A1A] leading-snug">
-                Ya realicé la transferencia por <strong className="text-[#3AAA35]">${totalFinal.toLocaleString("es-CL")}</strong> y tengo el comprobante listo para adjuntar.
-              </span>
-            </label>
-            {errors.pagado && <p className="text-red-400 text-xs mt-1.5">{errors.pagado}</p>}
           </div>
         </div>
 
@@ -720,6 +712,24 @@ export default function CheckoutForm() {
             )}
           </div>
 
+          {/* Checkbox confirmación de pago */}
+          <div data-field="pagado">
+            <label className={`flex items-start gap-3 cursor-pointer p-3 rounded-2xl border-2 transition-colors ${
+              pagado ? "border-[#3AAA35] bg-[#3AAA35]/5" : errors.pagado ? "border-red-300 bg-red-50" : "border-[#e5e5e5]"
+            }`}>
+              <input
+                type="checkbox"
+                checked={pagado}
+                onChange={(e) => { setPagado(e.target.checked); setErrors((er) => ({ ...er, pagado: "" })); }}
+                className="mt-0.5 accent-[#3AAA35] w-4 h-4 flex-shrink-0"
+              />
+              <span className="font-nunito text-sm text-[#1A1A1A] leading-snug">
+                Ya realicé la transferencia por <strong className="text-[#3AAA35]">${totalFinal.toLocaleString("es-CL")}</strong> y tengo el comprobante listo para adjuntar.
+              </span>
+            </label>
+            {errors.pagado && <p className="text-red-400 text-xs mt-1.5">{errors.pagado}</p>}
+          </div>
+
           {/* Botón confirmar */}
           <button
             onClick={handleConfirmar}
@@ -742,9 +752,9 @@ export default function CheckoutForm() {
 
 /* ── Subcomponentes ── */
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({ label, error, fieldKey, children }: { label: string; error?: string; fieldKey?: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1" data-field={fieldKey}>
       <label className="font-nunito font-black text-[#1A1A1A] text-xs">{label}</label>
       {children}
       {error && <p className="text-red-400 text-xs">{error}</p>}

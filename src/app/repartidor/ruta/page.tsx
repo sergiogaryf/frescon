@@ -32,6 +32,8 @@ export default function RepartidorRutaPage() {
   const [actual,   setActual]   = useState(0);
   const [loading,  setLoading]  = useState(true);
   const [marcando, setMarcando] = useState(false);
+  const [vistaLista, setVistaLista] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
   const router = useRouter();
 
   // Feature: foto de entrega
@@ -124,6 +126,31 @@ export default function RepartidorRutaPage() {
     cargarChat();
   }
 
+  function onDragStart(idx: number) {
+    setDragIdx(idx);
+  }
+
+  function onDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === idx) return;
+    const reordered = [...pedidos];
+    const [moved] = reordered.splice(dragIdx, 1);
+    reordered.splice(idx, 0, moved);
+    setPedidos(reordered);
+    setDragIdx(idx);
+  }
+
+  function onDragEnd() {
+    setDragIdx(null);
+    // Guardar nuevo orden en backend
+    const orden = pedidos.map((p, i) => ({ id: p.id, orden_entrega: i + 1 }));
+    fetch("/api/repartidor/ruta", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orden }),
+    }).catch(() => {});
+  }
+
   const entregados = pedidos.filter((p) => p.estado === "Entregado").length;
   const progreso   = pedidos.length > 0 ? Math.round((entregados / pedidos.length) * 100) : 0;
   const pedidoActual = pedidos[actual];
@@ -185,6 +212,14 @@ export default function RepartidorRutaPage() {
           </div>
           <div className="flex gap-2">
             <button
+              onClick={() => setVistaLista((v) => !v)}
+              className={`font-nunito text-xs px-3 py-1.5 rounded-full border transition-all ${
+                vistaLista ? "bg-white text-[#2A7A26] border-white font-black" : "text-white/70 border-white/20 hover:border-white/50"
+              }`}
+            >
+              {vistaLista ? "🗂️ Card" : "📋 Lista"}
+            </button>
+            <button
               onClick={abrirHistorial}
               className="text-white/70 font-nunito text-xs px-3 py-1.5 rounded-full border border-white/20 hover:border-white/50"
             >
@@ -208,7 +243,52 @@ export default function RepartidorRutaPage() {
         </p>
       </div>
 
-      {/* Card principal */}
+      {/* Vista lista reordenable */}
+      {vistaLista ? (
+        <div className="flex-1 px-4 pb-6 overflow-y-auto">
+          <p className="text-white/50 font-nunito text-xs mb-3">Arrastra para reordenar la ruta de reparto</p>
+          <div className="flex flex-col gap-2">
+            {pedidos.map((p, i) => (
+              <div
+                key={p.id}
+                draggable
+                onDragStart={() => onDragStart(i)}
+                onDragOver={(e) => onDragOver(e, i)}
+                onDragEnd={onDragEnd}
+                onClick={() => { setActual(i); setVistaLista(false); }}
+                className={`bg-white rounded-2xl px-4 py-3 shadow-sm cursor-grab active:cursor-grabbing transition-all ${
+                  dragIdx === i ? "opacity-50 scale-95" : ""
+                } ${p.estado === "Entregado" ? "opacity-60" : ""}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                    <span className="text-white text-[10px] font-black bg-[#2A7A26] w-6 h-6 rounded-full flex items-center justify-center">{i + 1}</span>
+                    <span className="text-[#bbb] text-[10px]">☰</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="font-nunito font-black text-[#1A1A1A] text-sm truncate">{p.nombre_cliente}</p>
+                      <span className={`text-[10px] font-nunito font-black px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                        p.estado === "Entregado" ? "bg-[#3AAA35]/15 text-[#2A7A26]" :
+                        p.estado === "En camino" ? "bg-orange-100 text-orange-700" :
+                        "bg-[#F9C514]/20 text-[#7A5F00]"
+                      }`}>
+                        {p.estado === "Entregado" ? "✅" : p.estado === "En camino" ? "🚗" : "🟡"}
+                      </span>
+                    </div>
+                    <p className="text-[#999] text-xs font-nunito truncate">📍 {p.direccion}</p>
+                    {p.sector && (
+                      <span className="text-[10px] font-nunito font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full mt-1 inline-block">{p.sector}</span>
+                    )}
+                  </div>
+                  <p className="font-nunito font-black text-[#3AAA35] text-sm flex-shrink-0">${p.total.toLocaleString("es-CL")}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+      /* Card principal */
       <div className="flex-1 px-4 pb-6">
         {pedidoActual ? (
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
@@ -248,7 +328,12 @@ export default function RepartidorRutaPage() {
 
             {/* Dirección */}
             <div className="px-5 py-4 border-b border-[#f0f0f0]">
-              <p className="font-nunito font-black text-[#999] text-xs mb-1">📍 DIRECCIÓN</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-nunito font-black text-[#999] text-xs">📍 DIRECCIÓN</p>
+                {pedidoActual.sector && (
+                  <span className="text-[10px] font-nunito font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">{pedidoActual.sector}</span>
+                )}
+              </div>
               <p className="font-nunito text-[#1A1A1A] text-base font-black">{pedidoActual.direccion}</p>
               {pedidoActual.notas && (
                 <p className="text-[#F9C514] font-nunito font-black text-sm mt-1.5 bg-[#F9C514]/10 px-3 py-1.5 rounded-xl">
@@ -342,8 +427,10 @@ export default function RepartidorRutaPage() {
           </div>
         ) : null}
       </div>
+      )}
 
-      {/* Navegación entre pedidos */}
+      {/* Navegación entre pedidos (solo en vista card) */}
+      {!vistaLista && (
       <div className="px-4 pb-8 flex items-center justify-between gap-3">
         <button
           onClick={() => setActual((a) => Math.max(0, a - 1))}
@@ -372,6 +459,7 @@ export default function RepartidorRutaPage() {
           Siguiente →
         </button>
       </div>
+      )}
 
       {/* Panel de chat */}
       {chatAbierto && (

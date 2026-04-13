@@ -305,6 +305,15 @@ export default function AdminPedidosPage() {
   const [loading,    setLoading]    = useState(true);
   const [expandido,  setExpandido]  = useState<string | null>(null);
   const [actualizando, setActualizando] = useState<string | null>(null);
+  const [checkedItems, setCheckedItems] = useState<Record<string, Set<number>>>({});
+
+  function toggleItem(pedidoId: string, idx: number) {
+    setCheckedItems((prev) => {
+      const set = new Set(prev[pedidoId] ?? []);
+      if (set.has(idx)) set.delete(idx); else set.add(idx);
+      return { ...prev, [pedidoId]: set };
+    });
+  }
 
   const fetchPedidos = useCallback(async () => {
     setLoading(true);
@@ -423,7 +432,12 @@ export default function AdminPedidosPage() {
                     <span className="text-[#999] text-xs font-nunito">{"\u{1F4C5}"} {formatFecha(p.fecha_entrega)}</span>
                   </div>
                   <p className="font-nunito font-black text-[#1A1A1A] text-base">{p.nombre_cliente}</p>
-                  <p className="text-[#999] text-xs font-nunito truncate">{"\u{1F4CD}"} {p.direccion}</p>
+                  <div className="flex items-center gap-2">
+                    {p.sector && (
+                      <span className="text-[10px] font-nunito font-black px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">{p.sector}</span>
+                    )}
+                    <p className="text-[#999] text-xs font-nunito truncate">{"\u{1F4CD}"} {p.direccion}</p>
+                  </div>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-nunito font-black text-[#3AAA35] text-lg">{formatMonto(p.total)}</p>
@@ -458,12 +472,33 @@ export default function AdminPedidosPage() {
                     )}
                   </div>
 
-                  {/* Detalle pedido */}
+                  {/* Detalle pedido con checklist */}
                   <div className="bg-white rounded-2xl p-4 mb-4">
-                    <p className="font-nunito font-black text-[#1A1A1A] text-xs mb-2">{"\u{1F9FA}"} Productos</p>
-                    {p.detalle_pedido.split("\n").map((linea, i) => (
-                      <p key={i} className="text-[#666] text-sm font-nunito">{linea}</p>
-                    ))}
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-nunito font-black text-[#1A1A1A] text-xs">{"\u{1F9FA}"} Productos</p>
+                      {checkedItems[p.id] && checkedItems[p.id].size > 0 && (
+                        <span className="text-[10px] font-nunito font-black text-[#3AAA35] bg-[#3AAA35]/10 px-2 py-0.5 rounded-full">
+                          {checkedItems[p.id].size}/{p.detalle_pedido.split("\n").filter(Boolean).length} listos
+                        </span>
+                      )}
+                    </div>
+                    {p.detalle_pedido.split("\n").filter(Boolean).map((linea, i) => {
+                      const checked = checkedItems[p.id]?.has(i) ?? false;
+                      return (
+                        <label
+                          key={i}
+                          className={`flex items-center gap-2.5 py-1.5 px-2 -mx-2 rounded-xl cursor-pointer transition-colors hover:bg-[#f9fafb] ${checked ? "opacity-50" : ""}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleItem(p.id, i)}
+                            className="accent-[#3AAA35] w-4 h-4 flex-shrink-0"
+                          />
+                          <span className={`text-sm font-nunito ${checked ? "line-through text-[#bbb]" : "text-[#666]"}`}>{linea}</span>
+                        </label>
+                      );
+                    })}
                     <p className="font-nunito font-black text-[#3AAA35] text-sm mt-2 pt-2 border-t border-[#f0f0f0]">
                       Total: {formatMonto(p.total)}
                     </p>
