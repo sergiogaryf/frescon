@@ -14,10 +14,11 @@ interface Msg {
   datosBanco?: boolean;
 }
 
-const BANK_NAME    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "Banco Estado";
-const BANK_HOLDER  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Frescon SpA";
-const BANK_RUT     = process.env.NEXT_PUBLIC_BANK_RUT     ?? "76.123.456-7";
-const BANK_EMAIL   = process.env.NEXT_PUBLIC_BANK_EMAIL   ?? "pagos@frescon.cl";
+const BANK_NAME    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "Mercado Pago";
+const BANK_HOLDER  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Sergio Enrique Baltazar Gary Fuentes";
+const BANK_RUT     = process.env.NEXT_PUBLIC_BANK_RUT     ?? "17.836.689-0";
+const BANK_ACCOUNT = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "1024232279";
+const BANK_EMAIL   = process.env.NEXT_PUBLIC_BANK_EMAIL   ?? "sergiogaryf@gmail.com";
 
 const REGEX_BANCO = /transferencia|datos.*(pago|banco|cuenta)|c[oó]mo\s*pag|d[oó]nde\s*transfier|datos\s*bancarios|n[uú]mero\s*de\s*cuenta|rut.*(pago|transferencia)|pagar.*pedido/i;
 
@@ -382,7 +383,7 @@ export default function ChatWidget() {
                           <p className="font-nunito font-black text-white text-xs">🏦 Datos de transferencia</p>
                           <button
                             onClick={() => {
-                              const texto = `Banco: ${BANK_NAME}\nNombre: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nTipo de cuenta: Vista\nEmail: ${BANK_EMAIL}`;
+                              const texto = `Banco: ${BANK_NAME}\nNombre: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nCuenta Vista: ${BANK_ACCOUNT}\nEmail: ${BANK_EMAIL}`;
                               navigator.clipboard.writeText(texto);
                               setBancoCopiado(true);
                               setTimeout(() => setBancoCopiado(false), 2000);
@@ -400,7 +401,7 @@ export default function ChatWidget() {
                           { label: "Banco", value: BANK_NAME },
                           { label: "Nombre", value: BANK_HOLDER },
                           { label: "RUT", value: BANK_RUT },
-                          { label: "Tipo de cuenta", value: "Vista" },
+                          { label: "Cuenta Vista", value: BANK_ACCOUNT },
                           { label: "Email", value: BANK_EMAIL },
                         ].map((row) => (
                           <div key={row.label} className="flex items-center justify-between">

@@ -8,10 +8,11 @@ import { useCartStore } from "@/store/cartStore";
 
 const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "56912345678";
 
-const BANK_NAME    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "Banco Estado";
-const BANK_HOLDER  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Frescon SpA";
-const BANK_RUT     = process.env.NEXT_PUBLIC_BANK_RUT     ?? "76.123.456-7";
-const BANK_EMAIL   = process.env.NEXT_PUBLIC_BANK_EMAIL   ?? "pagos@frescon.cl";
+const BANK_NAME    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "Mercado Pago";
+const BANK_HOLDER  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Sergio Enrique Baltazar Gary Fuentes";
+const BANK_RUT     = process.env.NEXT_PUBLIC_BANK_RUT     ?? "17.836.689-0";
+const BANK_ACCOUNT = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "1024232279";
+const BANK_EMAIL   = process.env.NEXT_PUBLIC_BANK_EMAIL   ?? "sergiogaryf@gmail.com";
 
 const unidadLabel: Record<string, string> = {
   kg: "kg", unidad: "c/u", litro: "lt", atado: "atado", docena: "doc",
@@ -83,7 +84,7 @@ export default function CheckoutForm() {
   const [bankCopiado,  setBankCopiado]  = useState(false);
 
   const copiarDatosBancarios = useCallback(() => {
-    const texto = `Banco: ${BANK_NAME}\nTitular: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nTipo de cuenta: Vista\nEmail: ${BANK_EMAIL}`;
+    const texto = `Banco: ${BANK_NAME}\nTitular: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nCuenta Vista: ${BANK_ACCOUNT}\nEmail: ${BANK_EMAIL}`;
     navigator.clipboard.writeText(texto);
     setBankCopiado(true);
     setTimeout(() => setBankCopiado(false), 2000);
@@ -480,7 +481,7 @@ export default function CheckoutForm() {
               <BankRow label="Banco"    value={BANK_NAME}    />
               <BankRow label="Titular"  value={BANK_HOLDER}  />
               <BankRow label="RUT"      value={BANK_RUT}     />
-              <BankRow label="Tipo de cuenta" value="Vista" />
+              <BankRow label="Cuenta Vista" value={BANK_ACCOUNT} />
               <BankRow label="Email"    value={BANK_EMAIL}   />
               <button
                 type="button"
