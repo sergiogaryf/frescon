@@ -11,7 +11,6 @@ const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "56912345678";
 const BANK_NAME    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "Banco Estado";
 const BANK_HOLDER  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Frescon SpA";
 const BANK_RUT     = process.env.NEXT_PUBLIC_BANK_RUT     ?? "76.123.456-7";
-const BANK_ACCOUNT = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "000-000000-00";
 const BANK_EMAIL   = process.env.NEXT_PUBLIC_BANK_EMAIL   ?? "pagos@frescon.cl";
 
 const unidadLabel: Record<string, string> = {
