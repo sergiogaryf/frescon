@@ -383,7 +383,7 @@ export default function ChatWidget() {
                           <p className="font-nunito font-black text-white text-xs">🏦 Datos de transferencia</p>
                           <button
                             onClick={() => {
-                              const texto = `Banco: ${BANK_NAME}\nNombre: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nCuenta Vista: ${BANK_ACCOUNT}\nEmail: ${BANK_EMAIL}`;
+                              const texto = `Banco: ${BANK_NAME}\nNombre: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nTipo de cuenta: Cuenta Vista\nN° de cuenta: ${BANK_ACCOUNT}\nEmail: ${BANK_EMAIL}`;
                               navigator.clipboard.writeText(texto);
                               setBancoCopiado(true);
                               setTimeout(() => setBancoCopiado(false), 2000);
@@ -401,7 +401,8 @@ export default function ChatWidget() {
                           { label: "Banco", value: BANK_NAME },
                           { label: "Nombre", value: BANK_HOLDER },
                           { label: "RUT", value: BANK_RUT },
-                          { label: "Cuenta Vista", value: BANK_ACCOUNT },
+                          { label: "Tipo de cuenta", value: "Cuenta Vista" },
+                          { label: "N° de cuenta", value: BANK_ACCOUNT },
                           { label: "Email", value: BANK_EMAIL },
                         ].map((row) => (
                           <div key={row.label} className="flex items-center justify-between">
