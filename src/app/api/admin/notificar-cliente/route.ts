@@ -25,7 +25,7 @@ function buildMensaje(payload: NotifPayload): string {
         const bankName    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "Banco Estado";
         const bankHolder  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Frescon SpA";
         const bankRut     = process.env.NEXT_PUBLIC_BANK_RUT     ?? "76.123.456-7";
-        const bankAccount = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "000-000000-00";
+        const bankAccount = "Vista";
         const bankEmail   = process.env.NEXT_PUBLIC_BANK_EMAIL   ?? "pagos@frescon.cl";
         const telLimpio   = payload.telefono.replace(/\D/g, "").slice(-9);
 
@@ -37,7 +37,7 @@ function buildMensaje(payload: NotifPayload): string {
           `⏰ *Horario:* 10:00 a 13:00 hrs\n` +
           (payload.direccion ? `📍 *Dirección:* ${payload.direccion}\n\n` : "\n") +
           `💳 *Datos para transferencia:*\n` +
-          `${bankName}\n${bankHolder}\nRUT: ${bankRut}\nCuenta: ${bankAccount}\nEmail: ${bankEmail}\n\n` +
+          `${bankName}\n${bankHolder}\nRUT: ${bankRut}\nTipo de cuenta: ${bankAccount}\nEmail: ${bankEmail}\n\n` +
           `📦 Sigue tu pedido: frescon.cl/seguimiento?tel=${telLimpio}\n\n` +
           `¿Dudas? Responde este mensaje 🐱\n— Celia, Frescón 🌿`
         );

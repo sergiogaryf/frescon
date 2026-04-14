@@ -42,7 +42,7 @@ function buildMensaje(data: NotifData): string {
         const bankName    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "Banco Estado";
         const bankHolder  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Frescon SpA";
         const bankRut     = process.env.NEXT_PUBLIC_BANK_RUT     ?? "76.123.456-7";
-        const bankAccount = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "000-000000-00";
+        const bankAccount = "Vista";
         const bankEmail   = process.env.NEXT_PUBLIC_BANK_EMAIL   ?? "pagos@frescon.cl";
         const telLimpio   = data.telefono.replace(/\D/g, "").slice(-9);
 
@@ -58,7 +58,7 @@ function buildMensaje(data: NotifData): string {
           `${bankName}\n` +
           `${bankHolder}\n` +
           `RUT: ${bankRut}\n` +
-          `Cuenta: ${bankAccount}\n` +
+          `Tipo de cuenta: ${bankAccount}\n` +
           `Email: ${bankEmail}\n\n` +
           `📦 *Sigue tu pedido en:*\n` +
           `frescon.cl/seguimiento?tel=${telLimpio}\n\n` +

@@ -84,7 +84,7 @@ export default function CheckoutForm() {
   const [bankCopiado,  setBankCopiado]  = useState(false);
 
   const copiarDatosBancarios = useCallback(() => {
-    const texto = `Banco: ${BANK_NAME}\nTitular: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nCuenta Vista: ${BANK_ACCOUNT}\nEmail: ${BANK_EMAIL}`;
+    const texto = `Banco: ${BANK_NAME}\nTitular: ${BANK_HOLDER}\nRUT: ${BANK_RUT}\nTipo de cuenta: Vista\nEmail: ${BANK_EMAIL}`;
     navigator.clipboard.writeText(texto);
     setBankCopiado(true);
     setTimeout(() => setBankCopiado(false), 2000);
@@ -481,7 +481,7 @@ export default function CheckoutForm() {
               <BankRow label="Banco"    value={BANK_NAME}    />
               <BankRow label="Titular"  value={BANK_HOLDER}  />
               <BankRow label="RUT"      value={BANK_RUT}     />
-              <BankRow label="Cuenta Vista" value={BANK_ACCOUNT} />
+              <BankRow label="Tipo de cuenta" value="Vista" />
               <BankRow label="Email"    value={BANK_EMAIL}   />
               <button
                 type="button"
