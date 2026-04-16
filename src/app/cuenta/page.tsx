@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { PedidoAdmin } from "@/lib/airtable";
 import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
 import { Product } from "@/types";
 
 const ESTADO_STYLE: Record<string, string> = {
@@ -77,6 +78,7 @@ interface PerfilInfo {
 const STORAGE_KEY = "frescon-cuenta-tel";
 
 export default function CuentaPage() {
+  const { user, fetchSession, logout: authLogout } = useAuthStore();
   const [telefono, setTelefono] = useState("");
   const [pedidos,  setPedidos]  = useState<PedidoAdmin[] | null>(null);
   const [perfil,   setPerfil]   = useState<PerfilInfo | null>(null);
@@ -95,14 +97,23 @@ export default function CuentaPage() {
     setLoading(false);
   }, []);
 
-  // Restaurar sesion al montar
+  // Restaurar sesion al montar — primero probar auth, luego localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setTelefono(saved);
-      cargarCuenta(saved);
+    fetchSession();
+  }, [fetchSession]);
+
+  useEffect(() => {
+    if (user?.telefono) {
+      setTelefono(user.telefono);
+      cargarCuenta(user.telefono);
+    } else {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setTelefono(saved);
+        cargarCuenta(saved);
+      }
     }
-  }, [cargarCuenta]);
+  }, [user, cargarCuenta]);
 
   async function buscar(e: React.FormEvent) {
     e.preventDefault();
@@ -111,8 +122,9 @@ export default function CuentaPage() {
     await cargarCuenta(telefono.trim());
   }
 
-  function cerrarSesion() {
+  async function cerrarSesion() {
     localStorage.removeItem(STORAGE_KEY);
+    if (user) await authLogout();
     setPedidos(null);
     setPerfil(null);
     setTelefono("");
@@ -148,7 +160,22 @@ export default function CuentaPage() {
           <h1 className="font-nunito font-black text-[#1A1A1A] text-4xl leading-tight mt-1">
             MIS <span className="text-[#3AAA35]">PEDIDOS</span>
           </h1>
-          <p className="text-[#999] mt-2">Ingresa tu numero de telefono para ver el historial de tus pedidos.</p>
+          <p className="text-[#999] mt-2">
+            {user
+              ? `Bienvenido, ${user.nombre.split(" ")[0]}.`
+              : "Ingresa tu numero de telefono para ver el historial de tus pedidos."
+            }
+          </p>
+          {!user && pedidos === null && (
+            <div className="flex gap-2 mt-3">
+              <Link href="/cuenta/login" className="bg-[#3AAA35] text-white font-nunito font-black text-xs px-5 py-2.5 rounded-full hover:bg-[#2A7A26] transition-colors">
+                Iniciar sesion
+              </Link>
+              <Link href="/cuenta/registro" className="border border-[#3AAA35] text-[#3AAA35] font-nunito font-black text-xs px-5 py-2.5 rounded-full hover:bg-[#3AAA35]/5 transition-colors">
+                Crear cuenta
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Buscador — se oculta cuando hay sesion abierta */}

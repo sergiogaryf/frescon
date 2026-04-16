@@ -15,6 +15,9 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     encontrado:          true,
     nombre:              perfil.nombre_detectado,
+    email:               perfil.email ?? "",
+    direccion:           perfil.direccion ?? "",
+    comuna:              perfil.comuna ?? "",
     zona:                perfil.zona,
     preferencias:        perfil.preferencias,
     dieta:               perfil.dieta,

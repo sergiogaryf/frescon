@@ -10,6 +10,7 @@ interface Props {
   product: Product;
   isOpen: boolean;
   onClose: () => void;
+  allProducts?: Product[];
 }
 
 const nivelLabel: Record<string, { texto: string; color: string; porcentaje: number }> = {
@@ -26,12 +27,42 @@ const unidadLabel: Record<string, string> = {
   docena: "por docena",
 };
 
-export default function ProductDetailModal({ product, isOpen, onClose }: Props) {
+/** Busca productos del catálogo que coincidan con los ingredientes de la receta */
+function matchIngredientes(ingredientes: string[], productos: Product[]): Product[] {
+  const matched: Product[] = [];
+  for (const ing of ingredientes) {
+    const ingNorm = ing.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    for (const p of productos) {
+      const pNorm = p.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (ingNorm.includes(pNorm) && !matched.some((m) => m.id === p.id)) {
+        matched.push(p);
+      }
+    }
+  }
+  return matched;
+}
+
+export default function ProductDetailModal({ product, isOpen, onClose, allProducts }: Props) {
   const info = getNutrition(product.nombre);
   const { addItem, removeItem, items } = useCartStore();
   const enCarrito = items.some((i) => i.product.id === product.id);
   const [cantidad, setCantidad] = useState(1);
+  const [recetaAgregada, setRecetaAgregada] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  const productosReceta = info && allProducts
+    ? matchIngredientes(info.receta.ingredientes, allProducts)
+    : [];
+
+  function handleAddReceta() {
+    for (const p of productosReceta) {
+      if (!items.some((i) => i.product.id === p.id)) {
+        addItem(p);
+      }
+    }
+    setRecetaAgregada(true);
+    setTimeout(() => setRecetaAgregada(false), 2500);
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -220,6 +251,21 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Props) 
           <p className="text-[#666] text-sm mt-3 leading-relaxed font-inter">
             {info.receta.preparacion}
           </p>
+          {productosReceta.length > 0 && (
+            <button
+              onClick={handleAddReceta}
+              disabled={recetaAgregada}
+              className={`mt-3 w-full py-2.5 rounded-full font-nunito font-black text-sm transition-all ${
+                recetaAgregada
+                  ? "bg-[#3AAA35] text-white"
+                  : "bg-[#F9C514] hover:bg-[#E0B010] text-[#1A1A1A]"
+              }`}
+            >
+              {recetaAgregada
+                ? `${productosReceta.length} producto${productosReceta.length > 1 ? "s" : ""} agregado${productosReceta.length > 1 ? "s" : ""}`
+                : `Agregar ingredientes al carrito (${productosReceta.length})`}
+            </button>
+          )}
         </div>
       </section>
 

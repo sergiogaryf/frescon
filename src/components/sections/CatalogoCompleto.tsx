@@ -283,7 +283,7 @@ export default function CatalogoCompleto({ productos, favoritos = [] }: { produc
         ) : paginados.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mb-10">
             {paginados.map((producto) => (
-              <ProductCard key={producto.id} product={producto} />
+              <ProductCard key={producto.id} product={producto} allProducts={productos} />
             ))}
           </div>
         ) : (

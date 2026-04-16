@@ -218,6 +218,9 @@ export interface PerfilCliente {
   id:                    string;
   telefono:              string;
   nombre_detectado:      string;
+  email:                 string;
+  direccion:             string;
+  comuna:                string;
   perfil:                string;
   intereses:             string;
   dieta:                 string;
@@ -234,6 +237,122 @@ export interface PerfilCliente {
   ultimo_pedido_detalle: string;
 }
 
+/* ── Auth de Clientes ── */
+
+export interface ClienteAuth {
+  id: string;
+  email: string;
+  password_hash: string;
+  session_token: string;
+  reset_token: string;
+  reset_token_expiry: string;
+  nombre_detectado: string;
+  telefono: string;
+  direccion: string;
+  comuna: string;
+  zona: string;
+}
+
+export async function getClienteByEmail(email: string): Promise<ClienteAuth | null> {
+  try {
+    const records = await perfilesTable
+      .select({ filterByFormula: `{email} = "${email.replace(/"/g, '\\"')}"`, maxRecords: 1 })
+      .all();
+    if (!records.length) return null;
+    const r = records[0];
+    return {
+      id:                 r.id,
+      email:              String(r.fields.email ?? ""),
+      password_hash:      String(r.fields.password_hash ?? ""),
+      session_token:      String(r.fields.session_token ?? ""),
+      reset_token:        String(r.fields.reset_token ?? ""),
+      reset_token_expiry: String(r.fields.reset_token_expiry ?? ""),
+      nombre_detectado:   String(r.fields.nombre_detectado ?? ""),
+      telefono:           String(r.fields.telefono ?? ""),
+      direccion:          String(r.fields.direccion ?? ""),
+      comuna:             String(r.fields.comuna ?? ""),
+      zona:               String(r.fields.zona ?? ""),
+    };
+  } catch { return null; }
+}
+
+export async function getClienteBySession(token: string): Promise<ClienteAuth | null> {
+  if (!token) return null;
+  try {
+    const records = await perfilesTable
+      .select({ filterByFormula: `{session_token} = "${token.replace(/"/g, '\\"')}"`, maxRecords: 1 })
+      .all();
+    if (!records.length) return null;
+    const r = records[0];
+    return {
+      id:                 r.id,
+      email:              String(r.fields.email ?? ""),
+      password_hash:      String(r.fields.password_hash ?? ""),
+      session_token:      String(r.fields.session_token ?? ""),
+      reset_token:        String(r.fields.reset_token ?? ""),
+      reset_token_expiry: String(r.fields.reset_token_expiry ?? ""),
+      nombre_detectado:   String(r.fields.nombre_detectado ?? ""),
+      telefono:           String(r.fields.telefono ?? ""),
+      direccion:          String(r.fields.direccion ?? ""),
+      comuna:             String(r.fields.comuna ?? ""),
+      zona:               String(r.fields.zona ?? ""),
+    };
+  } catch { return null; }
+}
+
+export async function getClienteByResetToken(token: string): Promise<ClienteAuth | null> {
+  if (!token) return null;
+  try {
+    const records = await perfilesTable
+      .select({ filterByFormula: `{reset_token} = "${token.replace(/"/g, '\\"')}"`, maxRecords: 1 })
+      .all();
+    if (!records.length) return null;
+    const r = records[0];
+    return {
+      id:                 r.id,
+      email:              String(r.fields.email ?? ""),
+      password_hash:      String(r.fields.password_hash ?? ""),
+      session_token:      String(r.fields.session_token ?? ""),
+      reset_token:        String(r.fields.reset_token ?? ""),
+      reset_token_expiry: String(r.fields.reset_token_expiry ?? ""),
+      nombre_detectado:   String(r.fields.nombre_detectado ?? ""),
+      telefono:           String(r.fields.telefono ?? ""),
+      direccion:          String(r.fields.direccion ?? ""),
+      comuna:             String(r.fields.comuna ?? ""),
+      zona:               String(r.fields.zona ?? ""),
+    };
+  } catch { return null; }
+}
+
+export async function registrarCliente(data: {
+  email: string;
+  password_hash: string;
+  nombre: string;
+  telefono: string;
+  direccion: string;
+  comuna: string;
+  session_token: string;
+}): Promise<string> {
+  const record = await perfilesTable.create({
+    email:              data.email,
+    password_hash:      data.password_hash,
+    nombre_detectado:   data.nombre,
+    telefono:           data.telefono,
+    direccion:          data.direccion,
+    comuna:             data.comuna,
+    session_token:      data.session_token,
+    primer_contacto:    new Date().toISOString(),
+    ultimo_contacto:    new Date().toISOString(),
+    total_conversaciones: 0,
+    total_pedidos:      0,
+  } as unknown as Record<string, string | number | boolean>);
+  return record.id;
+}
+
+export async function updateClienteFields(id: string, fields: Record<string, unknown>): Promise<void> {
+  await perfilesTable.update(id, fields as Record<string, string | number | boolean>);
+}
+
 export async function getPerfilCliente(telefono: string): Promise<PerfilCliente | null> {
   try {
     const limpio = telefono.replace(/\D/g, "").slice(-9);
@@ -246,6 +365,9 @@ export async function getPerfilCliente(telefono: string): Promise<PerfilCliente 
       id:                    r.id,
       telefono:              String(r.fields.telefono              ?? ""),
       nombre_detectado:      String(r.fields.nombre_detectado      ?? ""),
+      email:                 String(r.fields.email                 ?? ""),
+      direccion:             String(r.fields.direccion             ?? ""),
+      comuna:                String(r.fields.comuna                ?? ""),
       perfil:                String(r.fields.perfil                ?? ""),
       intereses:             String(r.fields.intereses             ?? ""),
       dieta:                 String(r.fields.dieta                 ?? ""),

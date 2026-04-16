@@ -84,6 +84,36 @@ function btn(href: string, text: string) {
   </table>`;
 }
 
+/* ── Email: recuperar contraseña ── */
+export async function emailResetPassword(data: {
+  nombre: string;
+  email:  string;
+  token:  string;
+}) {
+  const resetUrl = `https://www.frescon.cl/cuenta/recuperar?token=${data.token}`;
+  try {
+    await resend.emails.send({
+      from:    FROM,
+      to:      data.email,
+      subject: "🔑 Recupera tu clave — Frescón",
+      html: base(
+        "Recuperar acceso",
+        `Hola ${data.nombre}, recupera tu clave`,
+        `
+        <p style="${s.p}">Recibimos una solicitud para restablecer tu clave de Frescón.</p>
+        <p style="${s.p}">Haz clic en el botón para crear una nueva clave. Este enlace expira en <strong>1 hora</strong>.</p>
+        ${btn(resetUrl, "Crear nueva clave")}
+        <p style="margin:0; font-size:13px; color:#888; text-align:center;">
+          Si no solicitaste esto, puedes ignorar este correo. Tu cuenta sigue segura.
+        </p>
+        `
+      ),
+    });
+  } catch (e) {
+    console.error("Error email reset password:", e);
+  }
+}
+
 /* ── Email: pedido confirmado (cliente) ── */
 export async function emailPedidoConfirmado(data: {
   nombre:        string;

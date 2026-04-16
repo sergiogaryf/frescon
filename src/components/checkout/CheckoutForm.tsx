@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
 
 const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "56912345678";
 
@@ -18,16 +19,31 @@ const unidadLabel: Record<string, string> = {
   kg: "kg", unidad: "c/u", litro: "lt", atado: "atado", docena: "doc",
 };
 
-/** Devuelve los próximos N jueves desde hoy */
+/** Devuelve los próximos N jueves desde hoy.
+ *  Si es jueves entre 00:00-02:59, el jueves actual sigue disponible. */
 function getProximosJueves(n = 4): Date[] {
   const jueves: Date[] = [];
   const hoy = new Date();
   const d = new Date(hoy);
-  // Avanzar hasta el próximo jueves (4 = Thursday)
-  d.setDate(d.getDate() + ((4 - d.getDay() + 7) % 7 || 7));
-  for (let i = 0; i < n; i++) {
-    jueves.push(new Date(d));
+
+  const esJueves = hoy.getDay() === 4;
+  const anteDeLas3 = hoy.getHours() < 3;
+
+  if (esJueves && anteDeLas3) {
+    // Incluir el jueves de hoy como primera opción
+    jueves.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
     d.setDate(d.getDate() + 7);
+    for (let i = 1; i < n; i++) {
+      jueves.push(new Date(d));
+      d.setDate(d.getDate() + 7);
+    }
+  } else {
+    // Avanzar hasta el próximo jueves (4 = Thursday)
+    d.setDate(d.getDate() + ((4 - d.getDay() + 7) % 7 || 7));
+    for (let i = 0; i < n; i++) {
+      jueves.push(new Date(d));
+      d.setDate(d.getDate() + 7);
+    }
   }
   return jueves;
 }
@@ -48,6 +64,7 @@ const CODIGOS_DESCUENTO: Record<string, number> = { FRESCON10: 10, AMAMOSACELIA:
 
 export default function CheckoutForm() {
   const { items, total, clearCart, cajaDescuento, pedidoBaseId, pedidoBaseFecha, pedidoBaseDetalle, pedidoBaseTotal } = useCartStore();
+  const { user, fetchSession } = useAuthStore();
   const router      = useRouter();
   const totalValue  = total();
 
@@ -59,6 +76,42 @@ export default function CheckoutForm() {
   const [calle,     setCalle]     = useState("");
   const [numeroDpto, setNumeroDpto] = useState("");
   const [ciudad,    setCiudad]    = useState("Concón");
+
+  const [autoFilled, setAutoFilled] = useState(false);
+
+  // Auto-fill desde sesion del usuario (auth)
+  useEffect(() => { fetchSession(); }, [fetchSession]);
+  useEffect(() => {
+    if (user) {
+      if (user.nombre && !nombre) setNombre(user.nombre);
+      if (user.email && !email)   setEmail(user.email);
+      if (user.telefono && !telefono) setTelefono(user.telefono);
+      if (user.direccion && !calle)   setCalle(user.direccion);
+      if (user.comuna && ciudad === "Concón") setCiudad(user.comuna);
+      setAutoFilled(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Auto-fill por teléfono: busca perfil en Airtable cuando el usuario escribe 9+ dígitos
+  const buscarPerfilPorTelefono = useCallback(async (tel: string) => {
+    if (user || autoFilled) return; // ya tiene datos de auth
+    const digitos = tel.replace(/\D/g, "");
+    if (digitos.length < 9) return;
+    try {
+      const res = await fetch(`/api/cliente/perfil?telefono=${encodeURIComponent(tel)}`);
+      const data = await res.json();
+      if (data.encontrado) {
+        if (data.nombre && !nombre)    setNombre(data.nombre);
+        if (data.email && !email)      setEmail(data.email);
+        if (data.direccion && !calle)  setCalle(data.direccion);
+        if (data.comuna)               setCiudad(data.comuna);
+        setAutoFilled(true);
+      }
+    } catch { /* silencioso */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, autoFilled]);
+
   const [detalleEntrega, setDetalleEntrega] = useState("");
   const [notas,     setNotas]     = useState("");
   const [fecha,     setFecha]     = useState<Date | null>(() => {
@@ -330,6 +383,35 @@ export default function CheckoutForm() {
         {/* ── Columna izquierda: formulario ── */}
         <div className="flex flex-col gap-6">
 
+          {/* Banner auth / auto-fill */}
+          {user ? (
+            <div className="bg-[#3AAA35]/10 border border-[#3AAA35]/20 rounded-2xl px-5 py-3 flex items-center justify-between">
+              <p className="font-nunito text-[#2A7A26] text-sm">
+                <span className="font-black">Hola, {user.nombre.split(" ")[0]}!</span> Tus datos se cargaron automaticamente.
+              </p>
+            </div>
+          ) : autoFilled ? (
+            <div className="bg-[#3AAA35]/10 border border-[#3AAA35]/20 rounded-2xl px-5 py-3 flex items-center justify-between">
+              <p className="font-nunito text-[#2A7A26] text-sm">
+                <span className="font-black">Te reconocimos!</span> Completamos tus datos con tu informacion anterior.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-[#F9C514]/10 border border-[#F9C514]/30 rounded-2xl px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+              <p className="font-nunito text-[#7A5F00] text-sm">
+                Tienes cuenta? Inicia sesion para cargar tus datos automaticamente.
+              </p>
+              <div className="flex gap-2">
+                <Link href="/cuenta/login" className="bg-[#3AAA35] text-white font-nunito font-black text-xs px-4 py-2 rounded-full hover:bg-[#2A7A26] transition-colors">
+                  Iniciar sesion
+                </Link>
+                <Link href="/cuenta/registro" className="border border-[#3AAA35] text-[#3AAA35] font-nunito font-black text-xs px-4 py-2 rounded-full hover:bg-[#3AAA35]/5 transition-colors">
+                  Crear cuenta
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Tus datos */}
           <div className="bg-white rounded-3xl p-6 shadow-sm">
             <h2 className="font-nunito font-black text-[#1A1A1A] text-lg mb-5 flex items-center gap-2">
@@ -364,7 +446,12 @@ export default function CheckoutForm() {
                   type="tel"
                   placeholder="+56 9 1234 5678"
                   value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTelefono(val);
+                    if (val.replace(/\D/g, "").length >= 9) buscarPerfilPorTelefono(val);
+                  }}
+                  onBlur={() => buscarPerfilPorTelefono(telefono)}
                   className={inputClass(!!errors.telefono)}
                 />
               </Field>

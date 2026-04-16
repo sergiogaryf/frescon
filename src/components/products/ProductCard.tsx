@@ -8,9 +8,10 @@ import ProductDetailModal from "./ProductDetailModal";
 
 interface ProductCardProps {
   product: Product;
+  allProducts?: Product[];
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, allProducts }: ProductCardProps) {
   const [cantidad, setCantidad] = useState(1);
   const [showDetail, setShowDetail] = useState(false);
   const { addItem, removeItem, items } = useCartStore();
@@ -104,6 +105,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         product={product}
         isOpen={showDetail}
         onClose={() => setShowDetail(false)}
+        allProducts={allProducts}
       />
     </>
   );
