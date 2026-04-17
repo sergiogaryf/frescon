@@ -1,4 +1,4 @@
-import { randomBytes, pbkdf2Sync } from "crypto";
+import { randomBytes, pbkdf2Sync, timingSafeEqual } from "crypto";
 
 const ITERATIONS = 100_000;
 const KEY_LEN = 64;
@@ -11,12 +11,24 @@ export function hashPassword(password: string): string {
   return `${salt}:${hash}`;
 }
 
-/** Verifica password contra hash almacenado */
+/** Verifica password contra hash almacenado (timing-safe) */
 export function verifyPassword(password: string, stored: string): boolean {
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return false;
   const candidate = pbkdf2Sync(password, salt, ITERATIONS, KEY_LEN, DIGEST).toString("hex");
-  return candidate === hash;
+  const a = Buffer.from(candidate, "hex");
+  const b = Buffer.from(hash, "hex");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+/** Comparación timing-safe para tokens (strings) */
+export function safeCompare(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
 }
 
 /** Genera token aleatorio para sesiones y reset */

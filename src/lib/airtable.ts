@@ -353,6 +353,31 @@ export async function updateClienteFields(id: string, fields: Record<string, unk
   await perfilesTable.update(id, fields as Record<string, string | number | boolean>);
 }
 
+export async function getClienteByPhoneDigits(digits: string): Promise<ClienteAuth | null> {
+  if (!digits || digits.length < 6) return null;
+  try {
+    const last6 = digits.replace(/\D/g, "").slice(-6);
+    const records = await perfilesTable
+      .select({ filterByFormula: `RIGHT({telefono}, 6) = "${last6}"`, maxRecords: 5 })
+      .all();
+    if (!records.length) return null;
+    const r = records[0];
+    return {
+      id:                 r.id,
+      email:              String(r.fields.email ?? ""),
+      password_hash:      String(r.fields.password_hash ?? ""),
+      session_token:      String(r.fields.session_token ?? ""),
+      reset_token:        String(r.fields.reset_token ?? ""),
+      reset_token_expiry: String(r.fields.reset_token_expiry ?? ""),
+      nombre_detectado:   String(r.fields.nombre_detectado ?? ""),
+      telefono:           String(r.fields.telefono ?? ""),
+      direccion:          String(r.fields.direccion ?? ""),
+      comuna:             String(r.fields.comuna ?? ""),
+      zona:               String(r.fields.zona ?? ""),
+    };
+  } catch { return null; }
+}
+
 export async function getPerfilCliente(telefono: string): Promise<PerfilCliente | null> {
   try {
     const limpio = telefono.replace(/\D/g, "").slice(-9);

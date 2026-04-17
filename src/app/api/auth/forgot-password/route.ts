@@ -2,9 +2,20 @@ import { NextResponse } from "next/server";
 import { generateToken } from "@/lib/auth";
 import { getClienteByEmail, updateClienteFields } from "@/lib/airtable";
 import { emailResetPassword } from "@/lib/email";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 3 solicitudes por IP cada 15 minutos
+    const ip = getClientIP(req);
+    const rl = checkRateLimit({ name: "forgot-password", maxRequests: 3, windowSeconds: 900 }, ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `Demasiados intentos. Intenta de nuevo en ${rl.resetIn} segundos.` },
+        { status: 429 }
+      );
+    }
+
     const { email } = await req.json();
 
     if (!email) {

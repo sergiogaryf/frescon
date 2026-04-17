@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -78,6 +78,9 @@ export default function CheckoutForm() {
   const [ciudad,    setCiudad]    = useState("Concón");
 
   const [autoFilled, setAutoFilled] = useState(false);
+  const [direccionesGuardadas, setDireccionesGuardadas] = useState<string[]>([]);
+  const [showDirSuggestions, setShowDirSuggestions] = useState(false);
+  const dirRef = useRef<HTMLDivElement>(null);
 
   // Auto-fill desde sesion del usuario (auth)
   useEffect(() => { fetchSession(); }, [fetchSession]);
@@ -107,10 +110,43 @@ export default function CheckoutForm() {
         if (data.direccion && !calle)  setCalle(data.direccion);
         if (data.comuna)               setCiudad(data.comuna);
         setAutoFilled(true);
+        fetchDirecciones(data.email, tel);
       }
     } catch { /* silencioso */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, autoFilled]);
+
+  // Cargar direcciones guardadas de pedidos anteriores
+  const fetchDirecciones = useCallback(async (em?: string, tel?: string) => {
+    const params = new URLSearchParams();
+    if (em) params.set("email", em);
+    if (tel) params.set("telefono", tel);
+    if (!params.toString()) return;
+    try {
+      const res = await fetch(`/api/cliente/direcciones?${params}`);
+      const data = await res.json();
+      if (data.direcciones?.length > 0) {
+        setDireccionesGuardadas(data.direcciones);
+      }
+    } catch { /* silencioso */ }
+  }, []);
+
+  useEffect(() => {
+    if (user?.email || user?.telefono) {
+      fetchDirecciones(user.email, user.telefono);
+    }
+  }, [user, fetchDirecciones]);
+
+  // Cerrar dropdown de direcciones al hacer click fuera
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dirRef.current && !dirRef.current.contains(e.target as Node)) {
+        setShowDirSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const [detalleEntrega, setDetalleEntrega] = useState("");
   const [notas,     setNotas]     = useState("");
@@ -458,13 +494,59 @@ export default function CheckoutForm() {
 
               {/* Dirección desglosada */}
               <Field label="Calle y número" error={errors.calle} fieldKey="calle">
-                <input
-                  type="text"
-                  placeholder="Ej: Av. Las Dunas 123"
-                  value={calle}
-                  onChange={(e) => setCalle(e.target.value)}
-                  className={inputClass(!!errors.calle)}
-                />
+                <div className="relative" ref={dirRef}>
+                  <input
+                    type="text"
+                    placeholder="Ej: Av. Las Dunas 123"
+                    value={calle}
+                    onChange={(e) => setCalle(e.target.value)}
+                    onFocus={() => {
+                      if (direccionesGuardadas.length > 0) setShowDirSuggestions(true);
+                    }}
+                    className={inputClass(!!errors.calle)}
+                  />
+                  {showDirSuggestions && direccionesGuardadas.length > 0 && (
+                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border-2 border-[#e5e5e5] rounded-2xl shadow-lg overflow-hidden">
+                      <p className="px-4 py-2 text-[#999] text-xs font-nunito font-black border-b border-[#f0f0f0]">
+                        Direcciones anteriores
+                      </p>
+                      {direccionesGuardadas.map((dir, i) => {
+                        // Parsear "calle, depto, ciudad" o "calle, ciudad"
+                        const parts = dir.split(",").map((s) => s.trim());
+                        const ciudades = ["Concón", "Reñaca", "Jardín del Mar", "Viña del Mar", "Quilpué"];
+                        const lastPart = parts[parts.length - 1];
+                        const matchedCiudad = ciudades.find(
+                          (c) => c.toLowerCase() === lastPart?.toLowerCase()
+                        );
+                        const calleFromDir = matchedCiudad
+                          ? parts.slice(0, -1).join(", ")
+                          : dir;
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              setCalle(calleFromDir);
+                              if (matchedCiudad) setCiudad(matchedCiudad);
+                              setShowDirSuggestions(false);
+                            }}
+                            className="w-full text-left px-4 py-3 hover:bg-[#3AAA35]/5 transition-colors flex items-center gap-3 border-b border-[#f5f5f5] last:border-b-0"
+                          >
+                            <span className="text-[#3AAA35] text-base flex-shrink-0">📍</span>
+                            <div className="min-w-0">
+                              <p className="font-nunito font-black text-[#1A1A1A] text-sm truncate">
+                                {calleFromDir}
+                              </p>
+                              {matchedCiudad && (
+                                <p className="font-nunito text-[#999] text-xs">{matchedCiudad}</p>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </Field>
 
               <Field label="Depto / casa / oficina (opcional)">

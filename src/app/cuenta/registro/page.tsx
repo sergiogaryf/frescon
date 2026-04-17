@@ -13,8 +13,6 @@ export default function RegistroPage() {
     nombre: "",
     email: "",
     telefono: "",
-    password: "",
-    password2: "",
     direccion: "",
     comuna: "Concon",
   });
@@ -28,17 +26,8 @@ export default function RegistroPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
-    if (form.password !== form.password2) {
-      setError("Las claves no coinciden");
-      return;
-    }
-    if (form.password.length < 6) {
-      setError("La clave debe tener al menos 6 caracteres");
-      return;
-    }
-
     setLoading(true);
+
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -47,7 +36,6 @@ export default function RegistroPage() {
           nombre: form.nombre,
           email: form.email,
           telefono: form.telefono,
-          password: form.password,
           direccion: form.direccion,
           comuna: form.comuna,
         }),
@@ -133,7 +121,7 @@ export default function RegistroPage() {
               type="text"
               value={form.direccion}
               onChange={(e) => update("direccion", e.target.value)}
-              placeholder="Av. Borgoño 1234"
+              placeholder="Av. Borgono 1234"
               className="w-full px-4 py-3 rounded-2xl border-2 border-[#e5e5e5] focus:border-[#3AAA35] focus:outline-none font-nunito text-[#1A1A1A] text-sm"
             />
           </div>
@@ -149,30 +137,6 @@ export default function RegistroPage() {
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className="font-nunito font-black text-[#1A1A1A] text-sm mb-1.5 block">Clave *</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => update("password", e.target.value)}
-              placeholder="Minimo 6 caracteres"
-              required
-              className="w-full px-4 py-3 rounded-2xl border-2 border-[#e5e5e5] focus:border-[#3AAA35] focus:outline-none font-nunito text-[#1A1A1A] text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="font-nunito font-black text-[#1A1A1A] text-sm mb-1.5 block">Repetir clave *</label>
-            <input
-              type="password"
-              value={form.password2}
-              onChange={(e) => update("password2", e.target.value)}
-              placeholder="Repite tu clave"
-              required
-              className="w-full px-4 py-3 rounded-2xl border-2 border-[#e5e5e5] focus:border-[#3AAA35] focus:outline-none font-nunito text-[#1A1A1A] text-sm"
-            />
           </div>
 
           {error && (

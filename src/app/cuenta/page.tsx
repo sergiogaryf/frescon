@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PedidoAdmin } from "@/lib/airtable";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
@@ -78,7 +78,17 @@ interface PerfilInfo {
 const STORAGE_KEY = "frescon-cuenta-tel";
 
 export default function CuentaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f9fafb]" />}>
+      <CuentaContent />
+    </Suspense>
+  );
+}
+
+function CuentaContent() {
   const { user, fetchSession, logout: authLogout } = useAuthStore();
+  const searchParams = useSearchParams();
+  const showPasswordSetup = searchParams.get("setup") === "password";
   const [telefono, setTelefono] = useState("");
   const [pedidos,  setPedidos]  = useState<PedidoAdmin[] | null>(null);
   const [perfil,   setPerfil]   = useState<PerfilInfo | null>(null);
@@ -293,6 +303,9 @@ export default function CuentaPage() {
               </div>
               {/* Codigo de referido */}
               <ReferidosSection telefono={telefono} nombre={nombre} />
+
+              {/* Cambio de clave */}
+              {user && <ChangePasswordSection autoOpen={showPasswordSetup} />}
 
               <div className="mt-6 text-center">
                 <Link href="/catalogo" className="bg-[#3AAA35] hover:bg-[#2A7A26] text-white font-nunito font-black px-8 py-3 rounded-full text-sm inline-block transition-colors">
@@ -727,6 +740,141 @@ function ReferidosSection({ telefono, nombre }: { telefono: string; nombre: stri
       >
         📤 Compartir con amigos
       </button>
+    </div>
+  );
+}
+
+/* ── Cambiar / Establecer Clave ── */
+
+function ChangePasswordSection({ autoOpen }: { autoOpen: boolean }) {
+  const [open, setOpen] = useState(autoOpen);
+  const [newPassword, setNewPassword] = useState("");
+  const [newPassword2, setNewPassword2] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+
+    if (newPassword !== newPassword2) {
+      setError("Las claves no coinciden");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("La clave debe tener al menos 6 caracteres");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Error al cambiar clave");
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
+      setNewPassword("");
+      setNewPassword2("");
+    } catch {
+      setError("Error de conexion");
+    }
+    setLoading(false);
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-4 w-full bg-white rounded-3xl p-4 shadow-sm flex items-center gap-3 hover:border-[#3AAA35] border-2 border-transparent transition-all text-left"
+      >
+        <span className="text-xl">🔒</span>
+        <div>
+          <p className="font-nunito font-black text-[#1A1A1A] text-sm">Establecer o cambiar clave</p>
+          <p className="font-nunito text-[#999] text-xs">Para ingresar con correo y clave en vez de telefono</p>
+        </div>
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-4 bg-white rounded-3xl p-6 shadow-sm">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-xl">🔒</span>
+        <h3 className="font-nunito font-black text-[#1A1A1A] text-sm">
+          {autoOpen ? "Crea una clave para tu cuenta" : "Cambiar clave"}
+        </h3>
+      </div>
+
+      {autoOpen && (
+        <div className="bg-[#F9C514]/10 border border-[#F9C514]/30 rounded-2xl p-3 mb-4">
+          <p className="font-nunito text-[#666] text-xs">
+            Tu cuenta se creo con tu telefono. Puedes crear una clave para ingresar mas rapido en el futuro. Esto es opcional.
+          </p>
+        </div>
+      )}
+
+      {success ? (
+        <div className="bg-[#3AAA35]/10 rounded-2xl p-4 text-center">
+          <p className="font-nunito font-black text-[#2A7A26] text-sm">Clave actualizada correctamente</p>
+          <p className="font-nunito text-[#666] text-xs mt-1">Ahora puedes ingresar con tu correo y clave.</p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label className="font-nunito font-black text-[#1A1A1A] text-xs mb-1 block">Nueva clave</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Minimo 6 caracteres"
+              required
+              className="w-full px-4 py-3 rounded-2xl border-2 border-[#e5e5e5] focus:border-[#3AAA35] focus:outline-none font-nunito text-[#1A1A1A] text-sm"
+            />
+          </div>
+          <div>
+            <label className="font-nunito font-black text-[#1A1A1A] text-xs mb-1 block">Repetir clave</label>
+            <input
+              type="password"
+              value={newPassword2}
+              onChange={(e) => setNewPassword2(e.target.value)}
+              placeholder="Repite tu clave"
+              required
+              className="w-full px-4 py-3 rounded-2xl border-2 border-[#e5e5e5] focus:border-[#3AAA35] focus:outline-none font-nunito text-[#1A1A1A] text-sm"
+            />
+          </div>
+
+          {error && (
+            <p className="text-red-500 text-sm font-nunito font-bold text-center bg-red-50 rounded-2xl py-2">{error}</p>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="flex-1 py-3 rounded-full border-2 border-[#e5e5e5] hover:border-[#999] text-[#666] font-nunito font-black text-sm transition-colors"
+            >
+              {autoOpen ? "Ahora no" : "Cancelar"}
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-3 rounded-full bg-[#3AAA35] hover:bg-[#2A7A26] disabled:opacity-50 text-white font-nunito font-black text-sm transition-colors"
+            >
+              {loading ? "Guardando..." : "Guardar clave"}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
